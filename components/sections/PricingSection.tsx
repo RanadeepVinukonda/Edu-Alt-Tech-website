@@ -15,7 +15,7 @@ const plans = [
   {
     name: 'School Plan',
     desc: 'Full digital ecosystem for your institution.',
-    price: '₹199',
+    price: '₹1',
     period: 'per student / mo',
     features: ['Everything in Basic', 'Teacher Dashboard', 'Parent App', 'Attendance Tracking', 'Curriculum Integration'],
     popular: true,
