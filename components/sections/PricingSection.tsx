@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../../lib/firebase';
 
 const plans = [
   {
@@ -17,7 +15,7 @@ const plans = [
   {
     name: 'School Plan',
     desc: 'Full digital ecosystem for your institution.',
-    price: '₹1',
+    price: '₹199',
     period: 'per student / mo',
     features: ['Everything in Basic', 'Teacher Dashboard', 'Parent App', 'Attendance Tracking', 'Curriculum Integration'],
     popular: true,
@@ -60,10 +58,17 @@ const PricingSection: React.FC = () => {
       const amountStr = plan.price.replace(/[^0-9]/g, '');
       const amountInPaise = parseInt(amountStr, 10) * 100;
 
-      // 1. Ask Firebase Backend to securely create an Order
-      const createOrder = httpsCallable(functions, 'createRazorpayOrder');
-      const orderResult: any = await createOrder({ amount: amountInPaise });
-      const order = orderResult.data;
+      // 1. Ask Vercel Backend API to securely create an Order using a native REST endpoint (no CORS)
+      const resOrder = await fetch('/api/createOrder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountInPaise })
+      });
+      const orderData = await resOrder.json();
+
+      if (!resOrder.ok) {
+        throw new Error(orderData.error || "Failed to create order on server");
+      }
 
       // 2. Load the checkout script
       const scriptLoaded = await loadRazorpayScript();
@@ -75,29 +80,33 @@ const PricingSection: React.FC = () => {
 
       // 3. Open checkout with secure Order ID
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID, 
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_SUbr4cftio73uJ", 
         amount: amountInPaise,
         currency: "INR",
         name: "Edu Alt Tech",
         description: `Subscription for ${plan.name}`,
         image: "/edulogo.png",
-        order_id: order.id, // Pulled securely from Firebase functions
+        order_id: orderData.id, // Pulled securely from Vercel backend
         handler: async function (response: any) {
           try {
-            // 4. Send signatures to Firebase backend for mathematical verification
-            const verifyPayment = httpsCallable(functions, 'verifyRazorpayPayment');
-            const verifyResult: any = await verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+            // 4. Send signatures to Vercel backend for mathematical verification
+            const resVerify = await fetch('/api/verifyPayment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
             });
+            const verifyData = await resVerify.json();
 
-            if (verifyResult.data.success) {
+            if (resVerify.ok && verifyData.success) {
               alert(`Payment Verified Successfully! Received securely and confirmed.`);
             } else {
-              throw new Error("Invalid Security Signature");
+              throw new Error(verifyData.error || "Invalid Security Signature");
             }
-          } catch (verifyError: any) {
+          } catch (verifyError) {
             console.error("Verification failed:", verifyError);
             alert("Payment processed, but security verification failed! Please contact support.");
           }
@@ -122,7 +131,7 @@ const PricingSection: React.FC = () => {
 
     } catch (error: any) {
       console.error("Payment initiation failed:", error);
-      alert(`Payment Failed: ${error.message || "Ensure your Firebase backend functions are deployed."}`);
+      alert(`Payment Failed: ${error.message}`);
     } finally {
       setProcessingPlan(null);
     }
@@ -180,7 +189,7 @@ const PricingSection: React.FC = () => {
                     : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white hover:-translate-y-1'
                 } ${processingPlan === plan.name ? 'opacity-70 cursor-not-allowed transform-none' : ''}`}
               >
-                {processingPlan === plan.name ? 'Connecting to Server...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
+                {processingPlan === plan.name ? 'Connecting...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
               </button>
             </motion.div>
           ))}
