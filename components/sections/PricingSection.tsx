@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 
 const plans = [
   {
@@ -46,55 +48,82 @@ const PricingSection: React.FC = () => {
   };
 
   const handlePayment = async (plan: any) => {
-    // If it's a free or custom plan, redirect to email as before
+    // If it's a free or custom plan, redirect to email
     if (plan.price === 'Free' || plan.price === 'Custom') {
       window.location.href = "mailto:edualtstudy@gmail.com";
       return;
     }
 
     setProcessingPlan(plan.name);
-    const res = await loadRazorpayScript();
 
-    if (!res) {
-      alert("Razorpay payment gateway failed to load. Please check your internet connection.");
-      setProcessingPlan(null);
-      return;
-    }
+    try {
+      const amountStr = plan.price.replace(/[^0-9]/g, '');
+      const amountInPaise = parseInt(amountStr, 10) * 100;
 
-    // Extract the numerical amount and convert to Paise (Razorpay expects Indian Rupees in smallest unit)
-    const amountStr = plan.price.replace(/[^0-9]/g, '');
-    const amountInPaise = parseInt(amountStr, 10) * 100;
+      // 1. Ask Backend to securely create an Order
+      const createOrder = httpsCallable(functions, 'createRazorpayOrder');
+      const orderResult: any = await createOrder({ amount: amountInPaise });
+      const order = orderResult.data;
 
-    const options = {
-      // It is highly recommended to store the key ID in your .env.local file
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || "YOUR_RAZORPAY_KEY_ID", 
-      amount: amountInPaise,
-      currency: "INR",
-      name: "Edu Alt Tech",
-      description: `Subscription for ${plan.name}`,
-      image: "/edulogo.png",
-      handler: function (response: any) {
-        alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
-        // TODO: Verify payment signature on your backend
-      },
-      prefill: {
-        name: "Student Name", // In a real app, populate with logged-in user data
-        email: "student@example.com",
-        contact: "9999999999"
-      },
-      theme: {
-        color: "#10b981" // Emerald-500 to match UI
+      // 2. Load the checkout script
+      const res = await loadRazorpayScript();
+      if (!res) {
+        alert("Razorpay payment gateway failed to load. Please check your internet connection.");
+        setProcessingPlan(null);
+        return;
       }
-    };
 
-    const paymentObject = new (window as any).Razorpay(options);
-    
-    paymentObject.on('payment.failed', function (response: any) {
-      alert(`Payment Failed. Reason: ${response.error.description}`);
-    });
+      // 3. Open checkout with secure Order ID
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "YOUR_RAZORPAY_KEY_ID", 
+        amount: amountInPaise,
+        currency: "INR",
+        name: "Edu Alt Tech",
+        description: `Subscription for ${plan.name}`,
+        image: "/edulogo.png",
+        order_id: order.id, // Pulled securely from backend
+        handler: async function (response: any) {
+          try {
+            // 4. Send signatures to backend for mathematical verification
+            const verifyPayment = httpsCallable(functions, 'verifyRazorpayPayment');
+            const verifyResult: any = await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+            
+            if (verifyResult.data.success) {
+              alert(`Payment Verified Successfully! Received securely and confirmed.`);
+            }
+          } catch (verifyError) {
+            console.error("Verification failed:", verifyError);
+            alert("Payment processed, but security verification failed! Please contact support.");
+          }
+        },
+        prefill: {
+          name: "Student Name", 
+          email: "student@example.com",
+          contact: "9999999999"
+        },
+        theme: {
+          color: "#10b981" // Emerald-500 to match UI
+        }
+      };
 
-    paymentObject.open();
-    setProcessingPlan(null);
+      const paymentObject = new (window as any).Razorpay(options);
+      
+      paymentObject.on('payment.failed', function (response: any) {
+        alert(`Payment Failed. Reason: ${response.error.description}`);
+      });
+
+      paymentObject.open();
+
+    } catch (error) {
+      console.error("Payment initiation failed:", error);
+      alert("Failed to initiate payment. Ensure your backend functions are deployed and active.");
+    } finally {
+      setProcessingPlan(null);
+    }
   };
 
   return (
@@ -149,7 +178,7 @@ const PricingSection: React.FC = () => {
                     : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white hover:-translate-y-1'
                 } ${processingPlan === plan.name ? 'opacity-70 cursor-not-allowed transform-none' : ''}`}
               >
-                {processingPlan === plan.name ? 'Processing...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
+                {processingPlan === plan.name ? 'Connecting to Servers...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
               </button>
             </motion.div>
           ))}
