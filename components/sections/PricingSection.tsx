@@ -17,7 +17,7 @@ const plans = [
   {
     name: 'School Plan',
     desc: 'Full digital ecosystem for your institution.',
-    price: '₹199',
+    price: '₹1',
     period: 'per student / mo',
     features: ['Everything in Basic', 'Teacher Dashboard', 'Parent App', 'Attendance Tracking', 'Curriculum Integration'],
     popular: true,
@@ -60,14 +60,14 @@ const PricingSection: React.FC = () => {
       const amountStr = plan.price.replace(/[^0-9]/g, '');
       const amountInPaise = parseInt(amountStr, 10) * 100;
 
-      // 1. Ask Backend to securely create an Order
+      // 1. Ask Firebase Backend to securely create an Order
       const createOrder = httpsCallable(functions, 'createRazorpayOrder');
       const orderResult: any = await createOrder({ amount: amountInPaise });
       const order = orderResult.data;
 
       // 2. Load the checkout script
-      const res = await loadRazorpayScript();
-      if (!res) {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
         alert("Razorpay payment gateway failed to load. Please check your internet connection.");
         setProcessingPlan(null);
         return;
@@ -75,27 +75,29 @@ const PricingSection: React.FC = () => {
 
       // 3. Open checkout with secure Order ID
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "YOUR_RAZORPAY_KEY_ID", 
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID, 
         amount: amountInPaise,
         currency: "INR",
         name: "Edu Alt Tech",
         description: `Subscription for ${plan.name}`,
         image: "/edulogo.png",
-        order_id: order.id, // Pulled securely from backend
+        order_id: order.id, // Pulled securely from Firebase functions
         handler: async function (response: any) {
           try {
-            // 4. Send signatures to backend for mathematical verification
+            // 4. Send signatures to Firebase backend for mathematical verification
             const verifyPayment = httpsCallable(functions, 'verifyRazorpayPayment');
             const verifyResult: any = await verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature
             });
-            
+
             if (verifyResult.data.success) {
               alert(`Payment Verified Successfully! Received securely and confirmed.`);
+            } else {
+              throw new Error("Invalid Security Signature");
             }
-          } catch (verifyError) {
+          } catch (verifyError: any) {
             console.error("Verification failed:", verifyError);
             alert("Payment processed, but security verification failed! Please contact support.");
           }
@@ -118,9 +120,9 @@ const PricingSection: React.FC = () => {
 
       paymentObject.open();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment initiation failed:", error);
-      alert("Failed to initiate payment. Ensure your backend functions are deployed and active.");
+      alert(`Payment Failed: ${error.message || "Ensure your Firebase backend functions are deployed."}`);
     } finally {
       setProcessingPlan(null);
     }
@@ -178,7 +180,7 @@ const PricingSection: React.FC = () => {
                     : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white hover:-translate-y-1'
                 } ${processingPlan === plan.name ? 'opacity-70 cursor-not-allowed transform-none' : ''}`}
               >
-                {processingPlan === plan.name ? 'Connecting to Servers...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
+                {processingPlan === plan.name ? 'Connecting to Server...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
               </button>
             </motion.div>
           ))}

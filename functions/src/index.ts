@@ -6,7 +6,7 @@ import * as crypto from "crypto";
 admin.initializeApp();
 
 function getRazorpayInstance() {
-  const key_id = process.env.RAZORPAY_KEY_ID || "rzp_live_SUakULterTMUkm";
+  const key_id = process.env.RAZORPAY_KEY_ID || "rzp_live_SUbr4cftio73uJ";
   const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!key_secret) {
@@ -19,7 +19,6 @@ function getRazorpayInstance() {
   return new Razorpay({ key_id, key_secret });
 }
 
-// 1. Create Order Backend API
 export const createRazorpayOrder = functions.https.onCall(async (data, context) => {
   try {
     const razorpay = getRazorpayInstance();
@@ -29,7 +28,6 @@ export const createRazorpayOrder = functions.https.onCall(async (data, context) 
       throw new functions.https.HttpsError("invalid-argument", "Payment amount must be provided.");
     }
 
-    // Razorpay orders.create expects amount in the lowest denomination (paise)
     const order = await razorpay.orders.create({
       amount: amount,
       currency: "INR",
@@ -43,7 +41,6 @@ export const createRazorpayOrder = functions.https.onCall(async (data, context) 
   }
 });
 
-// 2. Verify Payment Signature Backend API
 export const verifyRazorpayPayment = functions.https.onCall(async (data, context) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = data;
@@ -57,7 +54,6 @@ export const verifyRazorpayPayment = functions.https.onCall(async (data, context
       throw new functions.https.HttpsError("invalid-argument", "Missing required signature fields.");
     }
 
-    // Mathematically generate what the signature SHOULD be, using your private secret key.
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac("sha256", key_secret)
@@ -65,8 +61,6 @@ export const verifyRazorpayPayment = functions.https.onCall(async (data, context
       .digest("hex");
 
     if (expectedSignature === razorpay_signature) {
-      // Signature is valid. You can safely record this transaction into Firestore or perform subsequent actions.
-      // await admin.firestore().collection('transactions').add({ order_id: razorpay_order_id, status: 'success' });
       return { success: true, message: "Payment verified successfully" };
     } else {
       throw new functions.https.HttpsError("invalid-argument", "Payment verification failed. Invalid signature mismatch.");
