@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, getDocs, doc } from 'firebase/firestore';
 import { Course, UserObject, Enrollment, Attendance } from '../types';
 import { Loader2, Users, UserCheck } from 'lucide-react';
 import { User } from 'firebase/auth';
@@ -17,6 +17,7 @@ interface StudentWithDetails {
   courseTitle: string;
   enrolledAt: any;
   attendancePresent: number;
+  attendanceCount: number;
 }
 
 const TeacherStudents: React.FC<Props> = ({ user, courses }) => {
@@ -57,9 +58,27 @@ const TeacherStudents: React.FC<Props> = ({ user, courses }) => {
               email: userData.email,
               courseTitle,
               enrolledAt: enrollment.enrolledAt,
-              attendancePresent: 0
+              attendancePresent: 0,
+              attendanceCount: 0
             });
           }
+        }
+      }
+
+      // Calculate attendance counts from attendance collection for this teacher's courses
+      if (courseIds.length > 0) {
+        try {
+          const attendanceQuery = query(collection(db, 'attendance'), where('courseId', 'in', courseIds));
+          const attendanceSnapshot = await getDocs(attendanceQuery);
+          attendanceSnapshot.docs.forEach(doc => {
+            const attendance = doc.data() as Attendance;
+            const studentEntry = Array.from(studentMap.values()).find(s => s.uid === attendance.studentId && s.courseTitle === (courses.find(c => c.id === attendance.courseId)?.title || ''));
+            if (studentEntry) {
+              studentEntry.attendanceCount += 1;
+            }
+          });
+        } catch (err) {
+          console.error('Error fetching attendance', err);
         }
       }
       
@@ -84,6 +103,17 @@ const TeacherStudents: React.FC<Props> = ({ user, courses }) => {
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [courses]);
+
+  const formatDate = (value: any) => {
+    if (!value) return 'Recent';
+    if (value instanceof Date) return value.toLocaleDateString();
+    if (typeof value?.toDate === 'function') return value.toDate().toLocaleDateString();
+    if (typeof value === 'string') {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? 'Unknown' : parsed.toLocaleDateString();
+    }
+    return 'Unknown';
+  };
 
   // Fetch mock or real attendance (simplified for scope: we'd ideally query attendance collection per student)
   
@@ -119,6 +149,7 @@ const TeacherStudents: React.FC<Props> = ({ user, courses }) => {
                   <th className="p-6 font-bold text-slate-400 uppercase text-xs tracking-widest border-b border-slate-100">Student Name</th>
                   <th className="p-6 font-bold text-slate-400 uppercase text-xs tracking-widest border-b border-slate-100">Course</th>
                   <th className="p-6 font-bold text-slate-400 uppercase text-xs tracking-widest border-b border-slate-100">Enrolled On</th>
+                  <th className="p-6 font-bold text-slate-400 uppercase text-xs tracking-widest border-b border-slate-100">Attendance</th>
                   <th className="p-6 font-bold text-slate-400 uppercase text-xs tracking-widest border-b border-slate-100">Status</th>
                 </tr>
               </thead>
@@ -140,11 +171,14 @@ const TeacherStudents: React.FC<Props> = ({ user, courses }) => {
                       {student.courseTitle}
                     </td>
                     <td className="p-6 border-b border-slate-50 text-sm text-slate-500">
-                      {student.enrolledAt ? new Date(student.enrolledAt.toDate()).toLocaleDateString() : 'Recent'}
+                      {formatDate(student.enrolledAt)}
+                    </td>
+                    <td className="p-6 border-b border-slate-50 text-slate-600 font-medium">
+                      {student.attendanceCount} records
                     </td>
                     <td className="p-6 border-b border-slate-50">
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full flex items-center gap-1 w-max">
-                        <UserCheck className="w-3 h-3" /> Active
+                      <span className={`px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1 w-max ${student.attendanceCount > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                        <UserCheck className="w-3 h-3" /> {student.attendanceCount > 0 ? 'Active' : 'Pending'}
                       </span>
                     </td>
                   </tr>
