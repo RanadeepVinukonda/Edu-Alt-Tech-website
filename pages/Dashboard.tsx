@@ -75,32 +75,26 @@ const Dashboard: React.FC = () => {
   if (!userProfile) return null;
 
   return (
-    <div className="flex bg-slate-50 min-h-screen">
-      {/* Sidebar */}
+    <div className="flex bg-slate-50 dark:bg-slate-950 min-h-screen">
       <Sidebar role={userProfile.role} activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      {/* Main Content Area */}
       <div className="flex-1 ml-64 flex flex-col pt-24 min-h-screen">
         <div className="px-8 md:px-12 pb-12 w-full max-w-6xl mx-auto flex-1 flex flex-col">
-          {/* Top Bar inside Content */}
           <div className="flex justify-between items-center mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 mb-1 tracking-tight">
+              <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">
                 Welcome back, {userProfile.name.split(' ')[0]}
               </h1>
-              <p className="text-slate-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 {userProfile.role === 'teacher' ? 'Manage your classes and students effortlessly.' : 'Ready to continue learning?'}
               </p>
             </div>
             <button
               onClick={handleLogout}
-              className="btn-ripple flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all shadow-sm"
+              className="btn-ripple flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-100 dark:hover:border-red-800 transition-all shadow-sm"
             >
               <LogOut className="w-5 h-5" /> Logout
             </button>
           </div>
-
-          {/* Dynamic Dashboard Based on Role */}
           <div className="flex-1">
             {userProfile.role === 'teacher' || userProfile.role === 'admin' ? (
               <TeacherDashboard user={user} activeTab={activeTab} />

@@ -95,100 +95,65 @@ const Enroll: React.FC = () => {
   }
 
   return (
-    <div className="pt-32 pb-24 px-6 bg-slate-50 min-h-screen">
+    <div className="pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         <div>
-          <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6 leading-tight tracking-tight">
             Start Your Alternative Learning Journey
           </h1>
-          <p className="text-slate-600 text-lg mb-10 leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-400 text-lg mb-10 leading-relaxed">
             Take the first step towards a structured, accountability-driven education. Join a community of doers and bridge the execution gap.
           </p>
-
           <div className="space-y-6">
-            {[
-              "Join a peer-driven ecosystem",
-              "Access structured weekly plans",
-              "Get mentored by execution experts",
-              "Connect with driven students"
-            ].map(item => (
+            {["Join a peer-driven ecosystem","Access structured weekly plans","Get mentored by execution experts","Connect with driven students"].map(item => (
               <div key={item} className="flex items-center gap-4">
                 <div className="w-6 h-6 rounded-full bg-[#90EE90] flex items-center justify-center flex-shrink-0">
                   <CheckCircle2 className="w-4 h-4 text-slate-900" />
                 </div>
-                <span className="font-semibold text-slate-700">{item}</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{item}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100">
+        <div className="bg-white dark:bg-slate-900 p-8 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-slate-950 border border-slate-100 dark:border-slate-800">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter your full name"
-                  className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-200 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
+                <input type="text" required placeholder="Enter your full name"
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
+                  value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="name@example.com"
-                  className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-200 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Email Address</label>
+                <input type="email" required placeholder="name@example.com"
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
+                  value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="+91 XXXXX XXXXX"
-                  className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-200 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
-                  value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Phone Number</label>
+                <input type="tel" required placeholder="+91 XXXXX XXXXX"
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
+                  value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Main Goal in Learning</label>
-                <textarea
-                  required
-                  placeholder="What is your biggest execution hurdle?"
-                  className="w-full px-5 py-4 bg-slate-50 rounded-2xl border border-slate-200 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 outline-none transition-all h-32 resize-none"
-                  value={formData.goal}
-                  onChange={e => setFormData({ ...formData, goal: e.target.value })}
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Main Goal in Learning</label>
+                <textarea required placeholder="What is your biggest execution hurdle?"
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all h-32 resize-none"
+                  value={formData.goal} onChange={e => setFormData({ ...formData, goal: e.target.value })}
                 />
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 group text-lg"
+            <button type="submit" disabled={isSubmitting}
+              className="w-full py-5 bg-slate-900 dark:bg-emerald-600 text-white font-bold rounded-2xl hover:bg-slate-800 dark:hover:bg-emerald-500 transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2 group text-lg"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Proceed to Enrollment <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
+              {isSubmitting ? (<><Loader2 className="w-6 h-6 animate-spin" />Processing...</>) : (<>Proceed to Enrollment <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>)}
             </button>
-            <p className="text-center text-xs text-slate-400">
-              By proceeding, you agree to our Terms of Service and Privacy Policy.
-            </p>
+            <p className="text-center text-xs text-slate-400">By proceeding, you agree to our Terms of Service and Privacy Policy.</p>
           </form>
         </div>
       </div>

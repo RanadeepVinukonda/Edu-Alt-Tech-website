@@ -5,15 +5,13 @@ import { Link } from 'react-router-dom';
 
 const Team: React.FC = () => {
   return (
-    <div className="pt-32 pb-24 px-6 bg-slate-50 min-h-screen font-sans selection:bg-emerald-200">
+    <div className="pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950 min-h-screen font-sans selection:bg-emerald-200">
       <div className="max-w-7xl mx-auto">
-        
-        {/* Hero Section */}
         <div className="text-center mb-24 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 mb-8 pb-2 tracking-tight">
             The Minds Reimagining Education
           </h1>
-          <p className="text-slate-600 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-400 text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed">
             We are a collective of innovators, engineers, and educators driven by a singular mission: to bridge the execution gap and empower the next generation of builders.
           </p>
         </div>
@@ -23,7 +21,7 @@ const Team: React.FC = () => {
           {TEAM.map((member, idx) => (
             <div 
               key={idx} 
-              className="group relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-2xl transition-all duration-500 animate-float"
+              className="group relative overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 animate-float"
               style={{ animationDelay: `${idx * 0.15}s` }}
             >
               <div className="aspect-[4/5] relative overflow-hidden bg-slate-100">
@@ -73,28 +71,28 @@ const Team: React.FC = () => {
             <p className="text-slate-500 text-xl max-w-2xl mx-auto">The core principles that guide our everyday decisions and long-term ambitions.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
-              <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6 text-emerald-600">
+            <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 dark:text-emerald-400">
                 <Lightbulb className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Vision</h3>
-              <p className="text-slate-600 leading-relaxed text-lg">To create an ecosystem where real-world skills are accessible to everyone, fundamentally shifting how technology education is delivered.</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Vision</h3>
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg">To create an ecosystem where real-world skills are accessible to everyone, fundamentally shifting how technology education is delivered.</p>
             </div>
             
-            <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
+            <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 text-blue-600 dark:text-blue-400">
                 <Users className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Work Style</h3>
-              <p className="text-slate-600 leading-relaxed text-lg">Collaborative, fast-paced, and highly accountable. We believe in peer-to-peer growth, where every member is both a learner and a mentor.</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Work Style</h3>
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg">Collaborative, fast-paced, and highly accountable. We believe in peer-to-peer growth, where every member is both a learner and a mentor.</p>
             </div>
             
-            <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 text-purple-600">
+            <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
+              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mb-6 text-purple-600 dark:text-purple-400">
                 <TrendingUp className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Impact</h3>
-              <p className="text-slate-600 leading-relaxed text-lg">Our focus is measurable outcomes. We don't just build software blueprints; we build builders who go on to create impactful solutions.</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Impact</h3>
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg">Our focus is measurable outcomes. We don't just build software blueprints; we build builders who go on to create impactful solutions.</p>
             </div>
           </div>
         </div>

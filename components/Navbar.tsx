@@ -56,7 +56,7 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass border-b border-slate-200/50 py-3' : 'bg-transparent py-5'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass dark:bg-slate-900/90 border-b border-slate-200/50 dark:border-slate-700/50 py-3' : 'bg-transparent py-5'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2 group">
           <img 
@@ -64,7 +64,7 @@ const Navbar: React.FC = () => {
             alt="Edu Alt Tech Logo" 
             className="w-16 h-16 object-contain transform group-hover:scale-105 transition-transform" 
           />
-          <span className="font-bold text-xl tracking-tight text-slate-800">Edu Alt Tech</span>
+          <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-white">Edu Alt Tech</span>
         </Link>
 
         {/* Desktop Links */}
@@ -73,7 +73,7 @@ const Navbar: React.FC = () => {
             <Link 
               key={link.name} 
               to={link.path} 
-              className="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
             >
               {link.name}
             </Link>
@@ -130,48 +130,36 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-200 p-6 flex flex-col gap-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
           {navLinks.map((link) => (
-            <Link key={link.name} to={link.path} className="text-lg font-medium text-slate-700">
+            <Link key={link.name} to={link.path} className="text-lg font-medium text-slate-700 dark:text-slate-300">
               {link.name}
             </Link>
           ))}
-          <hr className="border-slate-100" />
+          <hr className="border-slate-100 dark:border-slate-800" />
           <div className="flex flex-col gap-4">
             {user ? (
               <div className="space-y-4">
-                <Link 
-                  to="/dashboard"
-                  className="flex items-center gap-2 text-lg font-medium text-slate-700"
-                >
+                <Link to="/dashboard" className="flex items-center gap-2 text-lg font-medium text-slate-700 dark:text-slate-300">
                   <Layout className="w-5 h-5" /> Dashboard
                 </Link>
-                <div className="flex items-center gap-2 text-lg font-medium text-slate-700">
+                <div className="flex items-center gap-2 text-lg font-medium text-slate-700 dark:text-slate-300">
                   <User className="w-5 h-5" /> {user.displayName || 'Learner'}
                 </div>
-                <button 
-                  onClick={handleLogout}
-                  className="w-full py-4 bg-slate-100 text-slate-700 font-bold rounded-xl flex items-center justify-center gap-2"
-                >
+                <button onClick={handleLogout} className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl flex items-center justify-center gap-2">
                   <LogOut className="w-5 h-5" /> Logout
                 </button>
               </div>
             ) : (
               <>
-                <Link to="/login" className="text-lg font-medium text-slate-700">Login</Link>
-                <Link 
-                  to="/peer-education" 
-                  className="w-full py-4 bg-[#90EE90] text-slate-900 text-center font-bold rounded-xl"
-                >
+                <Link to="/login" className="text-lg font-medium text-slate-700 dark:text-slate-300">Login</Link>
+                <Link to="/peer-education" className="w-full py-4 bg-[#90EE90] text-slate-900 text-center font-bold rounded-xl">
                   Join Us
                 </Link>
               </>
             )}
           </div>
         </div>
-      )}
     </nav>
   );
 };

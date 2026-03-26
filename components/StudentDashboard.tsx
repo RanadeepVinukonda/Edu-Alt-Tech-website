@@ -187,32 +187,32 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
     <div className="animate-in fade-in duration-500">
       {activeTab === 'overview' && (
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">My Dashboard</h2>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">My Dashboard</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-6">
-              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-6">
+              <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <BookOpen className="w-7 h-7" />
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-400 uppercase">Enrolled Courses</p>
-                <p className="text-4xl font-bold text-slate-900 mt-1">{enrolledCoursesList.length}</p>
+                <p className="text-4xl font-bold text-slate-900 dark:text-white mt-1">{enrolledCoursesList.length}</p>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-6">
-              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-6">
+              <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Target className="w-7 h-7" />
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-400 uppercase">Upcoming Classes</p>
-                <p className="text-4xl font-bold text-slate-900 mt-1">{upcomingClasses.length}</p>
+                <p className="text-4xl font-bold text-slate-900 dark:text-white mt-1">{upcomingClasses.length}</p>
               </div>
             </div>
           </div>
 
-          <h3 className="text-2xl font-bold text-slate-900 mb-4">Your Courses</h3>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Your Courses</h3>
           {enrolledCoursesList.length === 0 ? (
-            <div className="py-12 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
-              <p className="text-slate-500 mb-4">You haven't enrolled in any courses yet.</p>
+            <div className="py-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <p className="text-slate-500 dark:text-slate-400 mb-4">You haven't enrolled in any courses yet.</p>
               <button 
                 onClick={() => document.querySelector<HTMLButtonElement>('button:contains("Course Catalog")')?.click()} 
                 className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors"
@@ -223,9 +223,9 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {enrolledCoursesList.map(course => (
-                <div key={course.id} className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
-                  <h4 className="font-bold text-lg text-slate-900 truncate mb-2">{course.title}</h4>
-                  <p className="text-sm text-slate-500 line-clamp-2">{course.description}</p>
+                <div key={course.id} className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <h4 className="font-bold text-lg text-slate-900 dark:text-white truncate mb-2">{course.title}</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
                 </div>
               ))}
             </div>
@@ -235,10 +235,10 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
 
       {activeTab === 'enroll' && (
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
             Course Catalog
           </h2>
-          <p className="text-slate-500 mb-8 border-b border-slate-200 pb-6">Discover and enroll in new learning paths created by expert teachers.</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 border-b border-slate-200 dark:border-slate-800 pb-6">Discover and enroll in new learning paths created by expert teachers.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {availableCoursesList.length === 0 ? (
@@ -248,13 +248,13 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
             ) : null}
 
             {availableCoursesList.map(course => (
-              <div key={course.id} className="card-hover animate-slide-up group p-6 bg-white rounded-3xl border border-slate-200 hover:border-emerald-200 hover:shadow-lg transition-all flex flex-col gap-4">
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl text-slate-400 group-hover:text-emerald-500 flex items-center justify-center transition-colors">
+              <div key={course.id} className="card-hover animate-slide-up group p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-lg transition-all flex flex-col gap-4">
+                <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-400 group-hover:text-emerald-500 flex items-center justify-center transition-colors">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-slate-900 mb-2 truncate">{course.title}</h4>
-                  <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed">{course.description}</p>
+                  <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-2 truncate">{course.title}</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">{course.description}</p>
                 </div>
                 {/* Subjects taught */}
                 {courseSubjects[course.id]?.length > 0 && (
@@ -291,12 +291,12 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
 
       {activeTab === 'upcoming' && (
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">Upcoming Classes</h2>
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">Upcoming Classes</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden min-h-[400px]">
             {upcomingClasses.length === 0 ? (
               <div className="py-20 text-center flex flex-col items-center">
-                <CalendarIcon className="w-16 h-16 text-slate-200 mb-6" />
-                <h3 className="text-xl font-bold text-slate-900 mb-2">No upcoming classes</h3>
+                <CalendarIcon className="w-16 h-16 text-slate-200 dark:text-slate-700 mb-6" />
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No upcoming classes</h3>
                 <p className="text-slate-400 max-w-sm">Enjoy your free time or enroll in more courses to fill your schedule.</p>
               </div>
             ) : (
@@ -304,7 +304,7 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
                 {upcomingClasses.map(cls => {
                   const courseTitle = allCourses.find(c => c.id === cls.courseId)?.title || 'Course';
                   return (
-                    <div key={cls.id} className="p-6 border border-slate-100 rounded-[2rem] hover:border-emerald-200 hover:shadow-md transition-all group flex flex-col sm:flex-row gap-6 sm:items-center justify-between bg-slate-50/50">
+                    <div key={cls.id} className="p-6 border border-slate-100 dark:border-slate-800 rounded-[2rem] hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-md transition-all group flex flex-col sm:flex-row gap-6 sm:items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md ${cls.type === 'Live' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
@@ -312,8 +312,8 @@ const StudentDashboard: React.FC<Props> = ({ user, activeTab }) => {
                           </span>
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{courseTitle}</span>
                         </div>
-                        <h4 className="font-bold text-slate-900 text-xl mb-1">{cls.title}</h4>
-                        <p className="text-sm text-slate-500 font-medium flex items-center gap-1.5">
+                        <h4 className="font-bold text-slate-900 dark:text-white text-xl mb-1">{cls.title}</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
                           <CalendarIcon className="w-4 h-4" />
                           {new Date(cls.date).toLocaleString([], { dateStyle: 'full', timeStyle: 'short' })}
                         </p>
