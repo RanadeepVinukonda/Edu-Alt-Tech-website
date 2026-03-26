@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../lib/firebase';
-import { LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { UserObject } from '../types';
+import { motion } from 'framer-motion';
 
 import Sidebar from '../components/Sidebar';
 import TeacherDashboard from '../components/TeacherDashboard';
 import StudentDashboard from '../components/StudentDashboard';
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
+};
 
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState(auth.currentUser);
@@ -110,24 +116,25 @@ const Dashboard: React.FC = () => {
                 onClick={() => setIsSidebarOpen(prev => !prev)}
                 className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
-                {isSidebarOpen ? 'Close Menu' : 'Menu'}
+                {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
               <span className="text-lg font-bold text-slate-900 dark:text-white">{activeTab.toUpperCase()}</span>
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">
-                Welcome back, {userProfile.name.split(' ')[0]}
+              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 hidden md:block">{getGreeting()} 👋</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">
+                {userProfile.name.split(' ')[0]}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400">
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
                 {userProfile.role === 'teacher' ? 'Manage your classes and students effortlessly.' : 'Ready to continue learning?'}
               </p>
             </div>
-            <button
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
               onClick={handleLogout}
-              className="btn-ripple flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-100 dark:hover:border-red-800 transition-all shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-100 dark:hover:border-red-800 transition-all shadow-sm"
             >
-              <LogOut className="w-5 h-5" /> Logout
-            </button>
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Logout</span>
+            </motion.button>
           </div>
           <div className="flex-1">
             {userProfile.role === 'teacher' || userProfile.role === 'admin' ? (

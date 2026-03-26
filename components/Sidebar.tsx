@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRole } from '../types';
-import { BookOpen, Calendar, Users, LayoutDashboard, Settings } from 'lucide-react';
+import { BookOpen, Calendar, Users, LayoutDashboard, Settings, Bell, MessageCircle } from 'lucide-react';
 
 interface SidebarProps {
   role: UserRole;
@@ -15,13 +15,16 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, isOpen
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'courses', label: 'Course Management', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'schedule', label: 'Schedule Class', icon: <Calendar className="w-5 h-5" /> },
-    { id: 'students', label: 'Students & Attendance', icon: <Users className="w-5 h-5" /> },
+    { id: 'students', label: 'Students & Payments', icon: <Users className="w-5 h-5" /> },
+    { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
+    { id: 'messages', label: 'Messages', icon: <MessageCircle className="w-5 h-5" /> },
   ];
 
   const studentNav = [
     { id: 'overview', label: 'My Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'enroll', label: 'Course Catalog', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'upcoming', label: 'Upcoming Classes', icon: <Calendar className="w-5 h-5" /> },
+    { id: 'messages', label: 'Messages', icon: <MessageCircle className="w-5 h-5" /> },
   ];
 
   const navItems = role === 'teacher' ? teacherNav : studentNav;

@@ -3,10 +3,11 @@ import { User } from 'firebase/auth';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, where, deleteDoc, doc, serverTimestamp, onSnapshot, updateDoc } from 'firebase/firestore';
 import { Course } from '../types';
-import { Loader2, Plus, Trash2, Folder, BookOpen, IndianRupee } from 'lucide-react';
+import { Loader2, Plus, Trash2, Folder, BookOpen, IndianRupee, Bell, Send } from 'lucide-react';
 import CourseDetail from './CourseDetail';
 import ScheduleClass from './ScheduleClass';
 import TeacherStudents from './TeacherStudents';
+import Chat from './Chat';
 
 interface Props {
   user: User;
@@ -41,6 +42,41 @@ const TeacherDashboard: React.FC<Props> = ({ user, activeTab }) => {
   // Price editing state
   const [editingPriceCourseId, setEditingPriceCourseId] = useState<string | null>(null);
   const [editingPriceValue, setEditingPriceValue] = useState('');
+
+  // Notification state
+  const [notifText, setNotifText] = useState('');
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [sentNotifs, setSentNotifs] = useState<{ id: string; text: string; createdAt: any }[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'notifications'), where('global', '==', true));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as { id: string; text: string; createdAt: any }))
+        .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setSentNotifs(data);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifText.trim()) return;
+    setNotifLoading(true);
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        text: notifText.trim(),
+        global: true,
+        teacherId: user.uid,
+        createdAt: serverTimestamp(),
+      });
+      setNotifText('');
+    } catch (err) {
+      console.error('Error sending notification:', err);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'courses'), where('teacherId', '==', user.uid));
@@ -214,6 +250,63 @@ const TeacherDashboard: React.FC<Props> = ({ user, activeTab }) => {
 
       {activeTab === 'students' && (
         <TeacherStudents user={user} courses={courses} />
+      )}
+
+      {activeTab === 'notifications' && (
+        <div className="animate-in fade-in duration-500">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+            <Bell className="w-7 h-7 text-emerald-500" /> Send Notification
+          </h2>
+
+          {/* Send form */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-8 mb-8">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+              Notifications are broadcast to all students on their dashboard.
+            </p>
+            <form onSubmit={handleSendNotification} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text" required
+                value={notifText}
+                onChange={e => setNotifText(e.target.value)}
+                placeholder="e.g. New class uploaded in Mathematics..."
+                className="flex-1 px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50 dark:focus:ring-emerald-900/40 transition-all font-medium"
+              />
+              <button type="submit" disabled={notifLoading}
+                className="px-6 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center gap-2 transition-colors disabled:opacity-50 shadow-lg"
+              >
+                {notifLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Send</>}
+              </button>
+            </form>
+          </div>
+
+          {/* Sent notifications list */}
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Sent Notifications</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+            {sentNotifs.length === 0 ? (
+              <div className="py-16 text-center text-slate-400">No notifications sent yet.</div>
+            ) : (
+              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                {sentNotifs.map(n => (
+                  <li key={n.id} className="flex items-start gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bell className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-800 dark:text-slate-200 font-medium">{n.text}</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {n.createdAt?.toDate?.()?.toLocaleString() || 'Just now'}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'messages' && (
+        <Chat user={user} role="teacher" />
       )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Course">
