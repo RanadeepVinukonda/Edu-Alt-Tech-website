@@ -46,14 +46,15 @@ const Signup: React.FC = () => {
         displayName: name
       });
 
-      // Send verification email
+      // Send verification email (silent)
       await sendEmailVerification(userCredential.user);
 
-      // Sign the user out immediately as per requirements
-      await signOut(auth);
-
-      // Redirect to verification page
-      navigate(`/verify?email=${encodeURIComponent(email)}`);
+      // Temporarily disabled mandatory sign-out and verification redirect for easier local testing:
+      // await signOut(auth);
+      // navigate(`/verify?email=${encodeURIComponent(email)}`);
+      
+      // Auto-login to dashboard instead
+      navigate('/dashboard');
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {

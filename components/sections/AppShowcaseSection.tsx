@@ -25,7 +25,6 @@ const AppShowcaseSection: React.FC = () => {
             <p className="text-lg text-slate-300 mb-10 leading-relaxed">
               Experience the power of the Edu Alt Tech ecosystem on the go. Our native mobile applications provide students and parents with instant access to grades, timetables, and notifications.
             </p>
-            
             <div className="flex flex-col sm:flex-row gap-4">
               <button className="flex items-center justify-center gap-3 bg-white text-slate-900 px-6 py-4 rounded-xl font-bold hover:bg-slate-200 transition-colors opacity-50 cursor-not-allowed">
                 <Play className="w-6 h-6" />

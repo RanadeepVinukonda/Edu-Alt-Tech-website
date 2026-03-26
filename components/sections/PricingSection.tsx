@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 
 const plans = [
   {
@@ -34,6 +37,15 @@ const plans = [
 
 const PricingSection: React.FC = () => {
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -46,6 +58,13 @@ const PricingSection: React.FC = () => {
   };
 
   const handlePayment = async (plan: any) => {
+    // If the user isn't logged in, redirect them to the login page
+    if (!user) {
+      alert("You need to log in or sign up before completing a transaction.");
+      navigate('/login');
+      return;
+    }
+
     // If it's a free or custom plan, redirect to email
     if (plan.price === 'Free' || plan.price === 'Custom') {
       window.location.href = "mailto:edualtstudy@gmail.com";

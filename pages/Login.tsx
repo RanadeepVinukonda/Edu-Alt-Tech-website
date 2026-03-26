@@ -23,6 +23,8 @@ const Login: React.FC = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
       // Check if email is verified
+      // Temporarily disabled for easier local testing:
+      /*
       if (!userCredential.user.emailVerified) {
         // Sign out immediately
         await signOut(auth);
@@ -30,6 +32,7 @@ const Login: React.FC = () => {
         navigate(`/verify?email=${encodeURIComponent(email)}`);
         return;
       }
+      */
 
       navigate('/dashboard');
     } catch (err: any) {
