@@ -121,15 +121,16 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Toggle */}
         <div className="flex items-center gap-4 md:hidden">
-          <button onClick={toggleTheme} className="p-2 text-slate-600">
+          <button onClick={toggleTheme} className="p-2 text-slate-600 dark:text-slate-300">
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <button onClick={() => setIsOpen(!isOpen)} className="text-slate-800">
+          <button onClick={() => setIsOpen(!isOpen)} className="text-slate-800 dark:text-white">
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
       </div>
 
+      {isOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
           {navLinks.map((link) => (
             <Link key={link.name} to={link.path} className="text-lg font-medium text-slate-700 dark:text-slate-300">
@@ -160,6 +161,7 @@ const Navbar: React.FC = () => {
             )}
           </div>
         </div>
+      )}
     </nav>
   );
 };
