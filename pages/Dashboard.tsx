@@ -16,6 +16,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
@@ -59,6 +60,15 @@ const Dashboard: React.FC = () => {
     return () => unsubscribeAuth();
   }, [user, navigate]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isSidebarOpen) setIsSidebarOpen(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isSidebarOpen]);
+
   const handleLogout = async () => {
     await signOut(auth);
     navigate('/login');
@@ -76,10 +86,34 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex bg-slate-50 dark:bg-slate-950 min-h-screen">
-      <Sidebar role={userProfile.role} activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1 ml-64 flex flex-col pt-24 min-h-screen">
+      <Sidebar
+        role={userProfile.role}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <div className={`flex-1 ${isSidebarOpen ? '' : ''} ml-0 md:ml-64 flex flex-col pt-24 min-h-screen`}>
         <div className="px-8 md:px-12 pb-12 w-full max-w-6xl mx-auto flex-1 flex flex-col">
-          <div className="flex justify-between items-center mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex justify-between items-center mb-6 md:mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-3 md:hidden mb-4 md:mb-0">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(prev => !prev)}
+                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              >
+                {isSidebarOpen ? 'Close Menu' : 'Menu'}
+              </button>
+              <span className="text-lg font-bold text-slate-900 dark:text-white">{activeTab.toUpperCase()}</span>
+            </div>
             <div>
               <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight">
                 Welcome back, {userProfile.name.split(' ')[0]}

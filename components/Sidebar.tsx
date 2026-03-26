@@ -6,9 +6,11 @@ interface SidebarProps {
   role: UserRole;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, isOpen = true, onClose }) => {
   const teacherNav = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'courses', label: 'Course Management', icon: <BookOpen className="w-5 h-5" /> },
@@ -25,14 +27,17 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab }) => {
   const navItems = role === 'teacher' ? teacherNav : studentNav;
 
   return (
-    <div className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col pt-24 min-h-screen fixed left-0 top-0">
+    <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col pt-24 min-h-screen transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:z-auto`}>
       <div className="px-6 mb-8">
         <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Main Menu</h2>
         <nav className="space-y-2">
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                if (onClose && typeof onClose === 'function') onClose();
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
                 activeTab === item.id
                   ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
