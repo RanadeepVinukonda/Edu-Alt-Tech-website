@@ -9,6 +9,11 @@ import { UserObject, CourseEnrollment, Course, TeacherApplication } from '../typ
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good Morning' : h < 18 ? 'Good Afternoon' : 'Good Evening';
+};
+
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState(auth.currentUser);
   const [userProfile, setUserProfile] = useState<UserObject | null>(null);
