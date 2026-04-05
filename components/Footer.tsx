@@ -10,11 +10,15 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-[#90EE90] rounded-lg flex items-center justify-center">
-                <span className="font-bold text-slate-900 text-lg italic">E</span>
+            <Link to="/" className="flex items-center gap-2 group mb-6">
+              <div className="w-10 h-10 flex items-center justify-center transform group-hover:scale-105 transition-transform overflow-hidden rounded-xl">
+                <img src="/edulogo.png" alt="EduAltTech Logo" className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100"/><text fill="%23999" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14">LOGO</text></svg>';
+                  }}
+                />
               </div>
-              <span className="font-bold text-xl tracking-tight">Edu Alt Tech</span>
+              <span className="text-xl font-bold text-white tracking-tight">EduAltTech</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
               Bridging the execution gap through peer-driven education, accountability, and human-first systems.
@@ -67,7 +71,7 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-slate-800 pt-10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-500 text-xs">
-            © {new Date().getFullYear()} Edu Alt Tech. All rights reserved.
+            © {new Date().getFullYear()} EduAltTech. All rights reserved.
           </p>
           <p className="text-slate-500 text-xs italic">
             Built with purpose. Designed for disciplined learners.

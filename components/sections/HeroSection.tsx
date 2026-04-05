@@ -41,10 +41,6 @@ const HeroSection: React.FC = () => {
               Book a Demo
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link to="#solutions" className="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-800 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-full font-medium transition-all flex items-center justify-center gap-2 shadow-sm uppercase tracking-wide text-sm">
-              <PlayCircle className="w-5 h-5 text-emerald-500" />
-              Explore Solutions
-            </Link>
           </motion.div>
         </div>
 

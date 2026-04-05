@@ -1,11 +1,12 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 // Fix modular imports for Firebase Auth
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 
 const Signup: React.FC = () => {
   const [name, setName] = useState('');
@@ -13,10 +14,17 @@ const Signup: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('student');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    gsap.fromTo(formRef.current, 
+      { opacity: 0, y: 50, scale: 0.95 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }
+    );
+  });
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,12 +40,11 @@ const Signup: React.FC = () => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-      // Save additional user info including role to Firestore
+      // Save additional user info to Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         name,
         email,
         phone,
-        role,
         createdAt: serverTimestamp()
       });
 
@@ -49,12 +56,27 @@ const Signup: React.FC = () => {
       // Send verification email (silent)
       await sendEmailVerification(userCredential.user);
 
-      // Temporarily disabled mandatory sign-out and verification redirect for easier local testing:
-      // await signOut(auth);
+      // Trigger Welcome Email
+      try {
+        await setDoc(doc(collection(db, 'mail')), {
+          to: email,
+          message: {
+            subject: 'Welcome to Edu-Alt-Tech!',
+            text: `Hi ${name},\n\nThank you for joining EduAltTech! We're thrilled to have you as part of our learning community.\n\nBest,\nThe EduAltTech Team`
+          }
+        });
+      } catch (mailErr) {
+        console.error("Welcome email trigger failed", mailErr);
+      }
+
       // navigate(`/verify?email=${encodeURIComponent(email)}`);
       
       // Auto-login to dashboard instead
-      navigate('/dashboard');
+      if (email === 'viranadeep@gmail.com') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
@@ -73,7 +95,7 @@ const Signup: React.FC = () => {
         <ArrowLeft className="w-4 h-4" /> Back to Home
       </Link>
 
-      <div className="w-full max-w-xl bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-slate-950 border border-slate-100 dark:border-slate-800">
+      <div ref={formRef} className="w-full max-w-xl bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-slate-950 border border-slate-100 dark:border-slate-800">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Create Account</h1>
           <p className="text-slate-500 dark:text-slate-400">Join the world's most disciplined learners.</p>
@@ -94,23 +116,6 @@ const Signup: React.FC = () => {
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">I am a...</label>
-            <div className="flex gap-4">
-              <label className="flex-1 cursor-pointer">
-                <input type="radio" name="role" value="student" className="peer sr-only" checked={role === 'student'} onChange={() => setRole('student')} />
-                <div className="p-4 text-center border-2 border-slate-200 dark:border-slate-700 rounded-2xl peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/30 transition-all font-bold text-slate-700 dark:text-slate-300 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-400">
-                  Student
-                </div>
-              </label>
-              <label className="flex-1 cursor-pointer">
-                <input type="radio" name="role" value="teacher" className="peer sr-only" checked={role === 'teacher'} onChange={() => setRole('teacher')} />
-                <div className="p-4 text-center border-2 border-slate-200 dark:border-slate-700 rounded-2xl peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-900/30 transition-all font-bold text-slate-700 dark:text-slate-300 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-400">
-                  Teacher
-                </div>
-              </label>
-            </div>
-          </div>
-          <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Email</label>
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com"
               className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"

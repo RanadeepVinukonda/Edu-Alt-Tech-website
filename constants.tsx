@@ -84,14 +84,7 @@ export const TEAM: TeamMember[] = [
     email: "vksvl2006@gmail.com",
     image: "/images/team/kavya.jpeg"
   },
-  {
-    name: "Byra Lava Raju",
-    role: "Customer Service Manager",
-    specialization: "User Support & Success",
-    bio: "Dedicated to solving problems and ensuring a smooth experience for all learners and educators on our platform.",
-    email: "lavaraju5751@gmail.com",
-    image: "/images/team/lavaraju.jpg"
-  },
+  
   {
     name: "Gnana Sri Bathina",
     role: "Human Resources",

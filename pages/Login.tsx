@@ -1,10 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Mail, Loader2 } from 'lucide-react';
 // Fix modular imports for Firebase Auth
 import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +14,14 @@ const Login: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    gsap.fromTo(formRef.current, 
+      { opacity: 0, y: 50, scale: 0.95 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }
+    );
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,20 +30,11 @@ const Login: React.FC = () => {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
-      // Check if email is verified
-      // Temporarily disabled for easier local testing:
-      /*
-      if (!userCredential.user.emailVerified) {
-        // Sign out immediately
-        await signOut(auth);
-        // Redirect to verification page
-        navigate(`/verify?email=${encodeURIComponent(email)}`);
-        return;
+      if (userCredential.user.email === 'viranadeep@gmail.com') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
       }
-      */
-
-      navigate('/dashboard');
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -54,9 +54,12 @@ const Login: React.FC = () => {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      // Google accounts are verified by default
       if (result.user) {
-        navigate('/dashboard');
+        if (result.user.email === 'viranadeep@gmail.com') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -74,7 +77,7 @@ const Login: React.FC = () => {
         <ArrowLeft className="w-4 h-4" /> Back to Home
       </Link>
 
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-slate-950 border border-slate-100 dark:border-slate-800">
+      <div ref={formRef} className="w-full max-w-md bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-slate-950 border border-slate-100 dark:border-slate-800">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Welcome Back</h1>
           <p className="text-slate-500 dark:text-slate-400">Continue your execution journey.</p>
