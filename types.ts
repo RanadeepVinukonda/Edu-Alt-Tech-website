@@ -108,6 +108,8 @@ export interface Lecture {
   order: number;
   classes: PathClass[];    // Collection of classes inside this module
   createdAt: any;
+  meetingLink?: string;
+  recordedLink?: string;
 }
 
 export interface CourseResource {
