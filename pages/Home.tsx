@@ -4,16 +4,11 @@ import HeroSection from '../components/sections/HeroSection';
 import ProblemSection from '../components/sections/ProblemSection';
 import FeaturesSection from '../components/sections/FeaturesSection';
 import CurriculumSection from '../components/sections/CurriculumSection';
-import AppShowcaseSection from '../components/sections/AppShowcaseSection';
-import ArchitectureSection from '../components/sections/ArchitectureSection';
-import PricingSection from '../components/sections/PricingSection';
-import CaseStudySection from '../components/sections/CaseStudySection';
-import VisionSection from '../components/sections/VisionSection';
 import CtaSection from '../components/sections/CtaSection';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { ArrowRight, BookOpen, Star } from 'lucide-react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -42,7 +37,6 @@ const Home: React.FC = () => {
             let courses = cSnap.docs.map(d => ({ id: d.id, ...d.data() } as Course));
             
             if (profile.preferences && profile.preferences.length > 0) {
-              // Simple client-side preference sort based on category or string matching
               courses = courses.sort((a, b) => {
                 const aMatch = profile.preferences!.some(p => a.title.toLowerCase().includes(p.toLowerCase()) || a.category === p);
                 const bMatch = profile.preferences!.some(p => b.title.toLowerCase().includes(p.toLowerCase()) || b.category === p);
@@ -51,25 +45,28 @@ const Home: React.FC = () => {
                 return 0;
               });
             }
-            setRecommendedCourses(courses.slice(0, 3)); // show top 3 recommended
+            setRecommendedCourses(courses.slice(0, 3));
           }
         } catch (e) {
           console.error(e);
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
   useGSAP(() => {
-    if (user && dashboardRef.current) {
+    if (!loading && user && dashboardRef.current) {
       gsap.fromTo(dashboardRef.current.children, 
         { opacity: 0, y: 30 },
         { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' }
       );
     }
-  }, [user]);
+  }, [loading, user]);
 
   if (loading) {
     return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-500">Loading...</div>;
@@ -141,19 +138,15 @@ const Home: React.FC = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-950 transition-colors duration-300">
+    <div className="bg-white dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
       <HeroSection />
       <ProblemSection />
       <FeaturesSection />
       <CurriculumSection />
-      <AppShowcaseSection />
-      <ArchitectureSection />
-      <PricingSection />
-      <CaseStudySection />
-      <VisionSection />
       <CtaSection />
     </div>
   );
 };
 
 export default Home;
+

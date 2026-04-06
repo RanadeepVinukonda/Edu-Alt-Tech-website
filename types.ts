@@ -43,6 +43,7 @@ export interface Course {
   description: string;
   category: CourseCategory;
   price?: number; // in INR, 0 = free
+  thumbnailUrl?: string; // Optional thumbnail
   createdAt: any;
   createdBy: string; // admin or system
 }
@@ -99,6 +100,26 @@ export interface PathClass {
   createdAt?: any;
 }
 
+export interface ModuleLecture {
+  id: string;
+  title: string;
+  meetingLink?: string;
+  recordedLink?: string;
+  createdAt?: any;
+}
+
+export interface CourseModule {
+  id: string;
+  courseId: string;
+  teacherId: string;
+  title: string;
+  description: string;
+  order: number;
+  lectures: ModuleLecture[]; // Lectures/Classes inside this module
+  createdAt: any;
+  thumbnailUrl?: string; // Optional thumbnail
+}
+
 export interface Lecture {
   id: string;
   courseId: string;
@@ -106,10 +127,11 @@ export interface Lecture {
   title: string;
   description: string;
   order: number;
-  classes: PathClass[];    // Collection of classes inside this module
+  classes: PathClass[];
   createdAt: any;
   meetingLink?: string;
   recordedLink?: string;
+  thumbnailUrl?: string;
 }
 
 export interface CourseResource {
@@ -166,4 +188,14 @@ export interface Attendance {
   courseId: string;
   status: 'Present' | 'Absent';
   joinedAt: any;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: any;
+  type?: 'course_deleted' | 'system';
 }

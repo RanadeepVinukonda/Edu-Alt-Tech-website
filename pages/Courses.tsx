@@ -4,6 +4,11 @@ import { db } from '../lib/firebase';
 import { Course } from '../types';
 import { Search, Book, Palette, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const Courses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -30,6 +35,27 @@ const Courses: React.FC = () => {
     fetchCourses();
   }, []);
 
+  const gridRef = React.useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!loading && courses.length > 0 && gridRef.current) {
+      gsap.fromTo(gridRef.current.children,
+        { opacity: 0, y: 50 },
+        { 
+          opacity: 1, 
+          y: 0, 
+          duration: 0.8, 
+          stagger: 0.1, 
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: gridRef.current,
+            start: "top 85%"
+          }
+        }
+      );
+    }
+  }, [loading, activeFilter, searchTerm]);
+
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -38,7 +64,7 @@ const Courses: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950 overflow-x-hidden w-full">
       <div className="max-w-7xl mx-auto">
         <div className="mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">Explore Courses</h1>
@@ -59,7 +85,7 @@ const Courses: React.FC = () => {
               className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm dark:text-white transition-shadow"
             />
           </div>
-          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+          <div className="flex gap-2 w-full md:w-auto flex-wrap justify-center md:justify-start">
             <button 
               onClick={() => setActiveFilter('all')}
               className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all ${activeFilter === 'all' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md' : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
@@ -87,16 +113,32 @@ const Courses: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
           </div>
         ) : filteredCourses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" ref={gridRef}>
             {filteredCourses.map(course => (
-              <div key={course.id} className="group bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col h-full">
-                <div className={`mb-4 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${course.category === 'education' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
-                  {course.category}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">{course.title}</h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-6 flex-grow line-clamp-3 leading-relaxed">
-                  {course.description}
-                </p>
+              <div key={course.id} className="group bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl hover:shadow-emerald-500/10 hover:border-emerald-500/30 transition-all duration-500 flex flex-col h-full transform hover:-translate-y-2">
+                {course.thumbnailUrl ? (
+                  <div className="w-full h-56 overflow-hidden relative border-b border-slate-100 dark:border-slate-800">
+                    <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out" />
+                    <div className="absolute top-4 right-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 shadow border border-slate-200 dark:border-slate-700">
+                      {course.category}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`w-full h-48 flex items-center justify-center p-6 border-b border-slate-100 dark:border-slate-800 ${course.category === 'education' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-500' : 'bg-purple-50 dark:bg-purple-900/20 text-purple-500'}`}>
+                    <Book className="w-16 h-16 opacity-40 group-hover:scale-110 transition-transform duration-500" />
+                  </div>
+                )}
+                
+                <div className="p-6 flex flex-col flex-grow relative">
+                  {!course.thumbnailUrl && (
+                    <div className={`mb-4 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${course.category === 'education' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
+                      {course.category}
+                    </div>
+                  )}
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{course.title}</h3>
+                  <p className="text-slate-500 dark:text-slate-400 mb-6 flex-grow line-clamp-3 leading-relaxed">
+                    {course.description}
+                  </p>
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                   <span className="font-bold text-slate-900 dark:text-white text-lg">
                     {course.price === 0 || !course.price ? 'Free' : `₹${course.price}`}
@@ -106,6 +148,7 @@ const Courses: React.FC = () => {
                   </Link>
                 </div>
               </div>
+            </div>
             ))}
           </div>
         ) : (

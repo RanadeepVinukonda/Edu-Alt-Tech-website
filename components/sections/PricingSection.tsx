@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
+import { toast } from 'react-hot-toast';
 
 const plans = [
   {
@@ -60,7 +61,7 @@ const PricingSection: React.FC = () => {
   const handlePayment = async (plan: any) => {
     // If the user isn't logged in, redirect them to the login page
     if (!user) {
-      alert("You need to log in or sign up before completing a transaction.");
+      toast.error("You need to log in or sign up before completing a transaction.");
       navigate('/login');
       return;
     }
@@ -92,7 +93,7 @@ const PricingSection: React.FC = () => {
       // 2. Load the checkout script
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
-        alert("Razorpay payment gateway failed to load. Please check your internet connection.");
+        toast.error("Razorpay payment gateway failed to load. Please check your internet connection.");
         setProcessingPlan(null);
         return;
       }
@@ -121,13 +122,13 @@ const PricingSection: React.FC = () => {
             const verifyData = await resVerify.json();
 
             if (resVerify.ok && verifyData.success) {
-              alert(`Payment Verified Successfully! Received securely and confirmed.`);
+              toast.success(`Payment Verified Successfully! Received securely and confirmed.`);
             } else {
               throw new Error(verifyData.error || "Invalid Security Signature");
             }
           } catch (verifyError) {
             console.error("Verification failed:", verifyError);
-            alert("Payment processed, but security verification failed! Please contact support.");
+            toast.error("Payment processed, but security verification failed! Please contact support.");
           }
         },
         prefill: {
@@ -143,14 +144,14 @@ const PricingSection: React.FC = () => {
       const paymentObject = new (window as any).Razorpay(options);
       
       paymentObject.on('payment.failed', function (response: any) {
-        alert(`Payment Failed. Reason: ${response.error.description}`);
+        toast.error(`Payment Failed. Reason: ${response.error.description}`);
       });
 
       paymentObject.open();
 
     } catch (error: any) {
       console.error("Payment initiation failed:", error);
-      alert(`Payment Failed: ${error.message}`);
+      toast.error(`Payment Failed: ${error.message}`);
     } finally {
       setProcessingPlan(null);
     }

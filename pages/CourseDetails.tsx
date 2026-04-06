@@ -8,6 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { toast } from 'react-hot-toast';
 
 const CourseDetails: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -152,7 +153,7 @@ const CourseDetails: React.FC = () => {
         console.error("Email trigger failed", mailErr);
       }
 
-      alert("You have successfully enrolled in the course!");
+      toast.success("You have successfully enrolled in the course!");
     } catch (err) {
       console.error(err);
     } finally {

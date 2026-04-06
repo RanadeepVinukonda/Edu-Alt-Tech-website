@@ -6,6 +6,7 @@ import { Course, TeacherApplication as TeacherAppType } from '../types';
 import { ArrowLeft, Loader2, Calendar } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { toast } from 'react-hot-toast';
 
 const TeacherApplication: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -84,11 +85,11 @@ const TeacherApplication: React.FC = () => {
         createdAt: serverTimestamp()
       });
 
-      alert("Application submitted successfully! The admin will review and schedule an appointment with you.");
+      toast.success("Application submitted successfully! The admin will review and schedule an appointment with you.");
       navigate(`/courses/${courseId}`);
     } catch (err) {
       console.error(err);
-      alert("Failed to submit application");
+      toast.error("Failed to submit application");
     } finally {
       setSubmitLoading(false);
     }

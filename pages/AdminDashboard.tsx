@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../lib/firebase';
+import { auth, db, storage } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
-import { Loader2, Plus, Users, CalendarClock, Trash2, Check, Video, FileText, Edit, Save, X } from 'lucide-react';
+import { Loader2, Plus, Users, CalendarClock, Trash2, Check, Video, FileText, Edit, Save, X, Upload } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Course, TeacherApplication, PatchNote } from '../types';
+import { toast } from 'react-hot-toast';
 
 const ADMIN_EMAIL = 'viranadeep@gmail.com';
 
@@ -20,22 +22,52 @@ const AdminDashboard: React.FC = () => {
   const [patchNotes, setPatchNotes] = useState<PatchNote[]>([]);
 
   // Create course states
-  const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0 });
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [creatingCourse, setCreatingCourse] = useState(false);
 
   // Edit course states
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editCourseData, setEditCourseData] = useState<Course>({} as Course);
 
-  const handleDeleteCourse = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
-      try {
-        await deleteDoc(doc(db, 'courses', id));
-        fetchData();
-      } catch (e) {
-        console.error(e);
-      }
-    }
+  const handleDeleteCourse = (id: string, title: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3 p-2">
+        <p className="font-bold text-slate-900 dark:text-white text-lg">Are you sure you want to delete this course?</p>
+        <div className="flex gap-2 justify-end">
+          <button className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors" onClick={() => toast.dismiss(t.id)}>Cancel</button>
+          <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors" onClick={async () => {
+            toast.dismiss(t.id);
+            try {
+              const eSnap = await getDocs(query(collection(db, 'enrollments'), where('courseId', '==', id)));
+              const tSnap = await getDocs(query(collection(db, 'teacher_applications'), where('courseId', '==', id), where('status', '==', 'approved')));
+
+              await deleteDoc(doc(db, 'courses', id));
+
+              const userIdsToNotify = new Set<string>();
+              eSnap.forEach(d => userIdsToNotify.add((d.data() as any).userId));
+              tSnap.forEach(d => userIdsToNotify.add((d.data() as any).userId));
+
+              for (const uid of Array.from(userIdsToNotify)) {
+                await setDoc(doc(collection(db, 'notifications')), {
+                  userId: uid,
+                  title: 'Course Deleted',
+                  message: `The course "${title}" you had access to has been removed.`,
+                  isRead: false,
+                  createdAt: serverTimestamp(),
+                  type: 'course_deleted'
+                });
+              }
+              fetchData();
+              toast.success("Course deleted successfully");
+            } catch (e) {
+              console.error(e);
+              toast.error("Failed to delete course");
+            }
+          }}>Delete</button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleUpdateCourse = async () => {
@@ -45,7 +77,8 @@ const AdminDashboard: React.FC = () => {
         title: editCourseData.title,
         description: editCourseData.description,
         category: editCourseData.category,
-        price: editCourseData.price
+        price: editCourseData.price,
+        thumbnailUrl: editCourseData.thumbnailUrl || ''
       });
       setEditingCourseId(null);
       fetchData();
@@ -125,6 +158,13 @@ const AdminDashboard: React.FC = () => {
     e.preventDefault();
     setCreatingCourse(true);
     try {
+      let finalThumbnailUrl = newCourse.thumbnailUrl;
+      if (thumbnailFile) {
+        const fileRef = ref(storage, `course_thumbnails/${Date.now()}_${thumbnailFile.name}`);
+        const snap = await uploadBytes(fileRef, thumbnailFile);
+        finalThumbnailUrl = await getDownloadURL(snap.ref);
+      }
+
       const cRef = doc(collection(db, 'courses'));
       const courseObj: Course = {
         id: cRef.id,
@@ -132,16 +172,21 @@ const AdminDashboard: React.FC = () => {
         description: newCourse.description,
         category: newCourse.category as any,
         price: Number(newCourse.price),
+        thumbnailUrl: finalThumbnailUrl,
         createdBy: 'admin',
         createdAt: serverTimestamp()
       };
       await setDoc(cRef, courseObj as any);
-      setNewCourse({ title: '', description: '', category: 'education', price: 0 });
+      setNewCourse({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
+      setThumbnailFile(null);
+      if (document.getElementById('thumbnailInput')) {
+        (document.getElementById('thumbnailInput') as HTMLInputElement).value = '';
+      }
       fetchData();
-      alert("Course created!");
+      toast.success("Course created!");
     } catch (e) {
       console.error(e);
-      alert("Could not create");
+      toast.error("Could not create");
     } finally {
       setCreatingCourse(false);
     }
@@ -165,17 +210,17 @@ const AdminDashboard: React.FC = () => {
       setNewTitle('');
       setNewContent('');
       fetchData();
-      alert("Patch note published!");
+      toast.success("Patch note published!");
     } catch (err) {
       console.error(err);
-      alert("Could not publish note");
+      toast.error("Could not publish note");
     } finally {
       setCreatingNote(false);
     }
   };
 
   const handleApproveApp = async (appId: string, emailStr?: string) => {
-    if(!meetLink) return alert("Provide a meet link");
+    if(!meetLink) { toast.error("Provide a meet link"); return; }
     try {
       await updateDoc(doc(db, 'teacher_applications', appId), {
         status: 'scheduled',
@@ -227,16 +272,26 @@ const AdminDashboard: React.FC = () => {
     } catch(e) { console.error(e); }
   };
 
-  const handleDeleteUser = async (uid: string) => {
-    if(window.confirm("Are you sure you want to ban/remove this user?")) {
-      try {
-        await deleteDoc(doc(db, 'users', uid));
-        fetchData();
-      } catch (e) {
-        console.error(e);
-        alert("Failed to delete user profile.");
-      }
-    }
+  const handleDeleteUser = (uid: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3 p-2">
+        <p className="font-bold text-slate-900 dark:text-white text-lg">Are you sure you want to ban/remove this user?</p>
+        <div className="flex gap-2 justify-end">
+          <button className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors" onClick={() => toast.dismiss(t.id)}>Cancel</button>
+          <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors" onClick={async () => {
+             toast.dismiss(t.id);
+             try {
+               await deleteDoc(doc(db, 'users', uid));
+               fetchData();
+               toast.success("User removed successfully");
+             } catch (e) {
+               console.error(e);
+               toast.error("Failed to delete user profile.");
+             }
+          }}>Delete User</button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   if (loading) {
@@ -278,6 +333,22 @@ const AdminDashboard: React.FC = () => {
                 <label className="block text-sm font-bold mb-1">Price (₹)</label>
                 <input type="number" required value={newCourse.price} onChange={e=>setNewCourse({...newCourse, price: e.target.value as any})} className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl" />
               </div>
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-sm font-bold mb-1">Thumbnail Image</label>
+                <input 
+                  id="thumbnailInput"
+                  type="file" 
+                  accept="image/*"
+                  onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      setThumbnailFile(e.target.files[0]);
+                    }
+                  }} 
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 rounded-xl" 
+                />
+                <p className="text-xs text-slate-500 mt-1">Or provide a direct URL below:</p>
+                <input type="url" value={newCourse.thumbnailUrl} onChange={e=>setNewCourse({...newCourse, thumbnailUrl: e.target.value})} placeholder="https://..." className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl mt-2" />
+              </div>
               <div className="col-span-1 md:col-span-2 pt-4">
                 <button type="submit" disabled={creatingCourse} className="w-full md:w-auto px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl flex items-center gap-2 disabled:opacity-50">
                   {creatingCourse ? <Loader2 className="w-5 h-5 animate-spin"/> : 'Publish Course'}
@@ -300,6 +371,7 @@ const AdminDashboard: React.FC = () => {
                          </select>
                          <input type="number" value={editCourseData.price} onChange={e=>setEditCourseData({...editCourseData, price: Number(e.target.value)})} className="w-full p-2 rounded bg-white dark:bg-slate-900 border dark:border-slate-700" placeholder="Price" required />
                        </div>
+                       <input type="url" value={editCourseData.thumbnailUrl || ''} onChange={e=>setEditCourseData({...editCourseData, thumbnailUrl: e.target.value})} className="w-full p-2 rounded bg-white dark:bg-slate-900 border dark:border-slate-700" placeholder="Thumbnail URL" />
                        <div className="flex gap-2">
                          <button type="submit" className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1 rounded shadow"><Save className="w-4 h-4"/> Save</button>
                          <button type="button" onClick={()=>setEditingCourseId(null)} className="flex items-center gap-1 bg-slate-300 dark:bg-slate-700 px-3 py-1 rounded shadow"><X className="w-4 h-4"/> Cancel</button>
@@ -315,7 +387,7 @@ const AdminDashboard: React.FC = () => {
                          <button onClick={() => { setEditingCourseId(c.id); setEditCourseData(c); }} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
                            <Edit className="w-5 h-5"/>
                          </button>
-                         <button onClick={() => handleDeleteCourse(c.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                         <button onClick={() => handleDeleteCourse(c.id, c.title)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                            <Trash2 className="w-5 h-5"/>
                          </button>
                        </div>

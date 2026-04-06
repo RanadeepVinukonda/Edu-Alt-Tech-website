@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, storage } from '../lib/firebase';
-import { Loader2, BookOpen, Users, Calendar, AlertCircle, X, Camera, MapPin, Building2, Tag } from 'lucide-react';
+import { Loader2, BookOpen, Users, Calendar, AlertCircle, X, Camera, MapPin, Building2, Tag, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { UserObject, CourseEnrollment, Course, TeacherApplication } from '../types';
+import { UserObject, CourseEnrollment, Course, TeacherApplication, Notification } from '../types';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 
@@ -19,6 +19,7 @@ const Dashboard: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserObject | null>(null);
   const [studentEnrollments, setStudentEnrollments] = useState<(CourseEnrollment & { courseData?: Course })[]>([]);
   const [teacherApplications, setTeacherApplications] = useState<(TeacherApplication & { courseData?: Course })[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   
 
@@ -61,12 +62,13 @@ const Dashboard: React.FC = () => {
         const sEnrollments: any[] = [];
         for (const docSnap of snapStudent.docs) {
           const data = docSnap.data();
-          let cData;
           try {
             const cDoc = await getDoc(doc(db, 'courses', data.courseId));
-            if (cDoc.exists()) cData = { id: cDoc.id, ...cDoc.data() };
+            if (cDoc.exists()) {
+              const cData = { id: cDoc.id, ...cDoc.data() };
+              sEnrollments.push({ id: docSnap.id, ...data, courseData: cData });
+            }
           } catch (e) {}
-          sEnrollments.push({ id: docSnap.id, ...data, courseData: cData });
         }
         setStudentEnrollments(sEnrollments);
       } catch (err) {
@@ -80,16 +82,27 @@ const Dashboard: React.FC = () => {
         const tApps: any[] = [];
         for (const docSnap of snapTeacher.docs) {
           const data = docSnap.data();
-           let cData;
            try {
              const cDoc = await getDoc(doc(db, 'courses', data.courseId));
-             if (cDoc.exists()) cData = { id: cDoc.id, ...cDoc.data() };
+             if (cDoc.exists()) {
+               const cData = { id: cDoc.id, ...cDoc.data() };
+               tApps.push({ id: docSnap.id, ...data, courseData: cData });
+             }
            } catch (e) {}
-           tApps.push({ id: docSnap.id, ...data, courseData: cData });
         }
         setTeacherApplications(tApps);
       } catch (err) {
         console.error("Error fetching teacher applications: ", err);
+      }
+
+      // Fetch notifications
+      try {
+        const qNotif = query(collection(db, 'notifications'), where('userId', '==', u.uid));
+        const snapNotif = await getDocs(qNotif);
+        const notifs = snapNotif.docs.map(d => ({ id: d.id, ...d.data() } as Notification));
+        setNotifications(notifs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      } catch (err) {
+        // console.error("Error fetching notifications", err);
       }
 
       setLoading(false);
@@ -164,6 +177,27 @@ const Dashboard: React.FC = () => {
           {/* Main Content Areas */}
           <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col gap-8">
              
+             {/* Notifications */}
+             {notifications.length > 0 && (
+               <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <div className="flex items-center gap-3 mb-6">
+                   <Bell className="w-6 h-6 text-amber-500" />
+                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h2>
+                 </div>
+                 <div className="space-y-4">
+                   {notifications.map(notif => (
+                     <div key={notif.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-start">
+                       <div>
+                         <h3 className="font-bold text-slate-900 dark:text-white mb-1">{notif.title}</h3>
+                         <p className="text-slate-600 dark:text-slate-400 text-sm">{notif.message}</p>
+                       </div>
+                       {!notif.isRead && <span className="w-3 h-3 bg-red-500 rounded-full mt-1 flex-shrink-0"></span>}
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             )}
+
              {/* Learning Dashboard */}
              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
                <div className="flex items-center gap-3 mb-6">
