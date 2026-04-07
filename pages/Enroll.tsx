@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LINKS } from '../constants';
 import { CheckCircle2, Loader2, ArrowRight, Home, ExternalLink } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const Enroll: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +42,7 @@ const Enroll: React.FC = () => {
       }, 2000);
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('There was an error submitting your enrollment. Please try again.');
+      toast.error('There was an error submitting your enrollment. Please try again.');
       setIsSubmitting(false);
     }
   };

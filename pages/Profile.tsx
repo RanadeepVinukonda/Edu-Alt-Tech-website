@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserObject } from '../types';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { toast } from 'react-hot-toast';
 
 const Profile: React.FC = () => {
   const [user, setUser] = useState(auth.currentUser);
@@ -98,7 +99,7 @@ const Profile: React.FC = () => {
       setSelectedFile(null);
     } catch (e) {
       console.error("Error updating profile", e);
-      alert("Failed to update profile. Make sure Firebase Storage rules are set.");
+      toast.error("Failed to update profile. Make sure Firebase Storage rules are set.");
     }
     setSaving(false);
   };

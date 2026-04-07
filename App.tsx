@@ -20,7 +20,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import PatchNotes from './pages/PatchNotes';
 import Verification from './pages/Verification';
 import { ThemeProvider } from './components/ThemeProvider';
-
+import { Toaster } from 'react-hot-toast';
 // Scroll to top on route change
 const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
@@ -45,6 +45,7 @@ const App: React.FC = () => {
       <Router>
         <ScrollToTop />
       <div className="flex flex-col min-h-screen">
+        <Toaster position="top-right" toastOptions={{ className: 'dark:bg-slate-800 dark:text-white' }} />
         <Navbar />
         <div className="flex-grow">
           <Routes>
