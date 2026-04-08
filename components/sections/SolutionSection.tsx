@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Globe, Smartphone, MonitorDot, TabletSmartphone, BarChart3, CloudZap } from 'lucide-react';
+import { Globe, Smartphone, MonitorDot, TabletSmartphone, BarChart3, Zap } from 'lucide-react';
 
 const solutions = [
   { icon: <Globe className="w-5 h-5 text-emerald-500" />, title: "Headless CMS Web App", desc: "Decoupled architecture for instant load times." },
@@ -27,7 +27,7 @@ const SolutionSection: React.FC = () => {
             className="lg:col-span-5 flex flex-col justify-center"
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-xs mb-8 shadow-sm w-max">
-              <CloudZap className="w-4 h-4" />
+              <Zap className="w-4 h-4" />
               Unified Solution
             </div>
             
