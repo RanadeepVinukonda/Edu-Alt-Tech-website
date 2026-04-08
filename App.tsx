@@ -39,37 +39,52 @@ const ScrollToTop = () => {
   return null;
 };
 
+import { SmoothScroll } from './components/SmoothScroll';
+
+const AppContent: React.FC = () => {
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+  const isClassroomPath = location.pathname.startsWith('/classroom');
+  const isHideLayout = isAdminPath || isClassroomPath;
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Toaster position="top-right" toastOptions={{ className: 'dark:bg-slate-800 dark:text-white' }} />
+      {!isHideLayout && <Navbar />}
+      <div className="flex-grow">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/peer-education" element={<PeerEducation />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/courses/:courseId" element={<CourseDetails />} />
+          <Route path="/classroom/:courseId" element={<CourseClassroom />} />
+          <Route path="/teacher-application" element={<TeacherApplication />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/patch-notes" element={<PatchNotes />} />
+          <Route path="/verify" element={<Verification />} />
+        </Routes>
+      </div>
+      {!isHideLayout && <Footer />}
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <Router>
-        <ScrollToTop />
-      <div className="flex flex-col min-h-screen">
-        <Toaster position="top-right" toastOptions={{ className: 'dark:bg-slate-800 dark:text-white' }} />
-        <Navbar />
-        <div className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/peer-education" element={<PeerEducation />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/courses/:courseId" element={<CourseDetails />} />
-            <Route path="/classroom/:courseId" element={<CourseClassroom />} />
-            <Route path="/teacher-application" element={<TeacherApplication />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/patch-notes" element={<PatchNotes />} />
-            <Route path="/verify" element={<Verification />} />
-          </Routes>
-        </div>
-        <Footer />
-      </div>
-      </Router>
+      <SmoothScroll>
+        <Router>
+          <ScrollToTop />
+          <AppContent />
+        </Router>
+      </SmoothScroll>
     </ThemeProvider>
   );
 };

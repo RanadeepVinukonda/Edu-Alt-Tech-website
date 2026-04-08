@@ -4,11 +4,10 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serv
 import { auth, db, storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Course, CourseEnrollment, CourseModule, ModuleLecture, CourseResource } from '../types';
-import { ArrowLeft, BookOpen, Video, FileText, Plus, Link as LinkIcon, Loader2, PlayCircle, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Video, FileText, Plus, Link as LinkIcon, Loader2, PlayCircle, CheckCircle2, Circle, ChevronRight, Clock, Award, Layout, Zap, X, Upload, ExternalLink } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 
 const CourseClassroom: React.FC = () => {
@@ -29,7 +28,7 @@ const CourseClassroom: React.FC = () => {
 
   // Teacher Modals
   const [showModuleModal, setShowModuleModal] = useState(false);
-  const [showLectureModal, setShowLectureModal] = useState<string | null>(null); // stores moduleId
+  const [showLectureModal, setShowLectureModal] = useState<string | null>(null);
   const [showResourceModal, setShowResourceModal] = useState(false);
   
   // Forms
@@ -44,17 +43,6 @@ const CourseClassroom: React.FC = () => {
 
   const [rTitle, setRTitle] = useState('');
   const [rUrl, setRUrl] = useState('');
-
-  const contentRef = React.useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    if (!loading && course) {
-      gsap.fromTo(contentRef.current, 
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-      );
-    }
-  }, [loading, course]);
 
   const fetchClassroomData = async (courseIdStr: string) => {
     try {
@@ -88,19 +76,18 @@ const CourseClassroom: React.FC = () => {
         const eSnap = await getDocs(eQ);
         
         if (eSnap.empty) {
-          navigate(`/courses/${courseId}`); // not enrolled
+          navigate(`/courses/${courseId}`);
           return;
         }
 
         const enrollData = { id: eSnap.docs[0].id, ...eSnap.docs[0].data() } as CourseEnrollment;
         setEnrollment(enrollData);
         
-        // Ensure student is active or teacher is approved
         if (enrollData.role === 'teacher') {
           const tQ = query(collection(db, 'teacher_applications'), where('userId', '==', currentUser.uid), where('courseId', '==', courseId), where('status', '==', 'approved'));
           const tSnap = await getDocs(tQ);
           if (tSnap.empty) {
-            navigate(`/courses/${courseId}`); // teacher not approved yet
+            navigate(`/courses/${courseId}`);
             return;
           }
           setRole('teacher');
@@ -157,8 +144,8 @@ const CourseClassroom: React.FC = () => {
       setShowModuleModal(false);
       setMTitle(''); setMDesc(''); setMThumb(''); setMThumbFile(null);
       fetchClassroomData(courseId);
-      toast.success("Module added to roadmap");
-    } catch (err) { console.error(err); toast.error("Failed to add module"); }
+      toast.success("Module deployed to roadmap");
+    } catch (err) { toast.error("Deployment failed"); }
   };
 
   const handleAddLecture = async (e: React.FormEvent) => {
@@ -167,7 +154,7 @@ const CourseClassroom: React.FC = () => {
     try {
       const moduleRef = doc(db, 'course_modules', showLectureModal);
       const newLecture: ModuleLecture = {
-        id: Date.now().toString(), // Simple unique id
+        id: Date.now().toString(),
         title: lTitle,
         meetingLink: lMeet,
         recordedLink: lRec,
@@ -184,8 +171,8 @@ const CourseClassroom: React.FC = () => {
       setShowLectureModal(null);
       setLTitle(''); setLMeet(''); setLRec('');
       fetchClassroomData(courseId);
-      toast.success("Lecture added to module");
-    } catch (err) { console.error(err); toast.error("Failed to add lecture"); }
+      toast.success("Lecture synced to module");
+    } catch (err) { toast.error("Sync failed"); }
   };
 
   const handleCreateResource = async (e: React.FormEvent) => {
@@ -201,8 +188,8 @@ const CourseClassroom: React.FC = () => {
       setShowResourceModal(false);
       setRTitle(''); setRUrl('');
       fetchClassroomData(courseId);
-      toast.success("Resource added");
-    } catch (err) { console.error(err); toast.error("Failed to add resource"); }
+      toast.success("Resource uploaded");
+    } catch (err) { toast.error("Upload failed"); }
   };
 
   const handleToggleComplete = async (moduleId: string) => {
@@ -223,14 +210,21 @@ const CourseClassroom: React.FC = () => {
       });
       
       setEnrollment({ ...enrollment, completedModules: newCompleted });
-      toast.success(isCompleted ? "Module marked as incomplete" : "Module completed! Great job!");
+      toast.success(isCompleted ? "Checkpoint reset" : "Module mastered! Progress updated.");
     } catch(err) {
-      console.error(err);
-      toast.error("Failed to update status");
+      toast.error("Status update failed");
     }
   };
 
-  if (loading) return <div className="min-h-screen pt-32 flex justify-center"><Loader2 className="w-10 h-10 animate-spin text-purple-600" /></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col items-center justify-center gap-4">
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+        <Loader2 className="w-12 h-12 text-purple-500" />
+      </motion.div>
+      <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">Entering Virtual Environment...</p>
+    </div>
+  );
+  
   if (!course) return null;
 
   const completedCount = enrollment?.completedModules?.length || 0;
@@ -238,235 +232,380 @@ const CourseClassroom: React.FC = () => {
   const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   return (
-    <div className="min-h-screen pt-28 pb-24 px-6 bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-6xl mx-auto" ref={contentRef}>
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-             <Link to="/dashboard" className="text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 text-sm font-bold mb-4">
-               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-             </Link>
-             <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                <BookOpen className="w-8 h-8 text-purple-500" /> {course.title}
-             </h1>
-             <div className="flex items-center gap-4 mt-4">
-                <p className="text-slate-500 dark:text-slate-400 font-medium bg-slate-200/50 dark:bg-slate-800/50 w-fit px-3 py-1 rounded-full text-sm">
-                   Virtual Classroom • {role === 'teacher' ? 'Mentor Mode' : 'Student Mode'}
-                </p>
-                {role === 'student' && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Course Progress</span>
-                    <div className="w-32 bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
-                    </div>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{progressPercent}%</span>
-                  </div>
-                )}
-             </div>
-          </div>
-          {role === 'teacher' && (
-            <div className="flex gap-2">
-               <button onClick={()=>setShowResourceModal(true)} className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 rounded-xl font-bold text-sm flex items-center gap-2 transition">
-                 <FileText className="w-4 h-4"/> Add Note
-               </button>
-               <button onClick={()=>setShowModuleModal(true)} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg transition">
-                 <Plus className="w-4 h-4"/> New Module
-               </button>
+    <div className="min-h-screen pt-28 pb-32 px-6 bg-slate-50 dark:bg-[#020617] selection:bg-purple-500/30">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="max-w-[1400px] mx-auto relative z-10">
+        {/* Navigation & Title */}
+        <header className="mb-12">
+          <Link to="/dashboard" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors text-sm font-bold mb-6 group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Command Center
+          </Link>
+          
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+            <div className="max-w-3xl">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="px-4 py-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-500/20">
+                  {role === 'teacher' ? 'Instructional Mode' : 'Learning Pathway'}
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <Clock className="w-3 h-3" /> Updated 2d ago
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mb-6">
+                {course.title}
+              </h1>
             </div>
-          )}
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Curriculum Path (Roadmap) */}
-          <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Roadmap</h2>
-            
+            {role === 'teacher' && (
+              <div className="flex gap-3">
+                <button onClick={()=>setShowResourceModal(true)} className="px-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                  Add Resource
+                </button>
+                <button onClick={()=>setShowModuleModal(true)} className="px-6 py-4 bg-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-purple-700 transition-all shadow-xl shadow-purple-600/20 flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> New Module
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Main Content: Immersive Roadmap */}
+          <div className="lg:col-span-8 space-y-12">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                <Layout className="w-6 h-6 text-purple-500" />
+                Curriculum Roadmap
+              </h2>
+            </div>
+
             {modules.length === 0 ? (
-               <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border 2 border-dashed border-slate-200 dark:border-slate-800 text-center">
-                 <p className="text-slate-500">No modules have been added to this path yet.</p>
-               </div>
+              <div className="py-24 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                <Zap className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-bold">Awaiting curriculum deployment...</p>
+              </div>
             ) : (
-               <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 space-y-8 pb-8">
-                 {modules.map((mod, idx) => {
-                   const isCompleted = enrollment?.completedModules?.includes(mod.id);
-                   const isExpanded = expandedModules.includes(mod.id);
+              <div className="relative space-y-12 pb-20">
+                {/* Visual Timeline Connector */}
+                <div className="absolute left-[39px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-purple-500 via-indigo-500 to-transparent opacity-20 hidden md:block" />
 
-                   return (
-                     <div key={mod.id} className="relative pl-8 animate-in slide-in-from-left-4 duration-500">
-                        {/* Timeline Node */}
-                        <div className={`absolute -left-[11px] top-6 w-5 h-5 rounded-full border-4 border-slate-50 dark:border-slate-950 flex items-center justify-center transition-colors ${isCompleted ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                {modules.map((mod, idx) => {
+                  const isCompleted = enrollment?.completedModules?.includes(mod.id);
+                  const isExpanded = expandedModules.includes(mod.id);
+                  const isOdd = idx % 2 !== 0;
 
-                        <div className={`bg-white dark:bg-slate-900 border ${isCompleted ? 'border-emerald-500/50 dark:border-emerald-500/30' : 'border-slate-200 dark:border-slate-800'} rounded-[2rem] shadow-sm flex flex-col hover:shadow-lg transition-all overflow-hidden`}>
-                            {/* Module Header Area */}
-                            <div className="p-6 cursor-pointer" onClick={() => toggleModule(mod.id)}>
-                              <div className="flex flex-col md:flex-row gap-6 items-start">
-                                {mod.thumbnailUrl ? (
-                                  <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl overflow-hidden flex-shrink-0">
-                                    <img src={mod.thumbnailUrl} alt={mod.title} className="w-full h-full object-cover" />
-                                  </div>
-                                ) : (
-                                  <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center font-black text-xl flex-shrink-0">
-                                    {idx + 1}
-                                  </div>
+                  return (
+                    <motion.div 
+                      key={mod.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="relative md:pl-20"
+                    >
+                      {/* Milestone Marker */}
+                      <div className={`absolute left-[30px] top-10 w-5 h-5 rounded-full border-4 border-slate-50 dark:border-[#020617] z-20 transition-all duration-500 hidden md:flex items-center justify-center ${
+                        isCompleted ? 'bg-emerald-500 scale-125 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-slate-300 dark:bg-slate-800'
+                      }`} />
+
+                      <div className={`group bg-white dark:bg-slate-900/80 backdrop-blur-xl border-2 rounded-[2.5rem] transition-all duration-500 overflow-hidden ${
+                        isCompleted ? 'border-emerald-500/20 shadow-emerald-500/5' : 'border-slate-200/50 dark:border-slate-800 shadow-xl'
+                      } ${isExpanded ? 'shadow-2xl border-purple-500/30' : 'hover:-translate-y-1 hover:border-purple-500/30'}`}>
+                        
+                        <div className="p-8 md:p-10 cursor-pointer" onClick={() => toggleModule(mod.id)}>
+                          <div className="flex flex-col md:flex-row gap-8 items-start">
+                            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-3xl overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${isCompleted ? 'ring-4 ring-emerald-500/20' : ''}`}>
+                              {mod.thumbnailUrl ? (
+                                <img src={mod.thumbnailUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                              ) : (
+                                <span className="text-3xl font-black text-slate-300 dark:text-slate-700">{idx + 1}</span>
+                              )}
+                            </div>
+
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight group-hover:text-purple-500 transition-colors">
+                                  {mod.title}
+                                </h3>
+                                {isCompleted && (
+                                  <span className="flex items-center gap-1.5 text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full">
+                                    <Award className="w-3 h-3" /> Mastered
+                                  </span>
                                 )}
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors">{mod.title}</h3>
-                                  </div>
-                                  <p className="text-slate-600 dark:text-slate-400 mb-4">{mod.description}</p>
-                                  
-                                  <div className="flex flex-wrap gap-2 items-center">
-                                     <span className="text-xs font-bold px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300">{mod.lectures?.length || 0} Lectures</span>
-                                  </div>
+                              </div>
+                              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 line-clamp-2">
+                                {mod.description}
+                              </p>
+                              <div className="flex items-center gap-4">
+                                <div className="flex -space-x-2">
+                                  {[1,2,3].map(i => (
+                                    <div key={i} className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-800" />
+                                  ))}
                                 </div>
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                  {mod.lectures?.length || 0} Sessions • Interactive
+                                </span>
                               </div>
                             </div>
                             
-                            {/* Expandable Lectures Area */}
-                            {isExpanded && (
-                              <div className="bg-slate-50 dark:bg-slate-950/50 p-6 border-t border-slate-100 dark:border-slate-800">
-                                 {(!mod.lectures || mod.lectures.length === 0) ? (
-                                    <p className="text-sm text-slate-500 italic">No lectures in this module yet.</p>
-                                 ) : (
-                                    <div className="space-y-3 mb-4">
-                                       {mod.lectures.map((lec, lIdx) => (
-                                          <div key={lec.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                            <div className="flex items-center gap-3">
-                                              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
-                                                {lIdx + 1}
-                                              </div>
-                                              <p className="font-bold text-slate-800 dark:text-slate-200">{lec.title}</p>
-                                            </div>
+                            <div className={`mt-4 md:mt-0 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}>
+                              <ChevronRight className="w-6 h-6 text-slate-400" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-8 pb-10 md:px-10 space-y-6">
+                                <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
+                                  {(!mod.lectures || mod.lectures.length === 0) ? (
+                                    <p className="text-sm text-slate-400 italic font-medium">No sessions scheduled for this module yet.</p>
+                                  ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {mod.lectures.map((lec, lIdx) => (
+                                        <div key={lec.id} className="p-5 bg-slate-50/50 dark:bg-slate-800/30 rounded-3xl border border-transparent hover:border-purple-500/20 hover:bg-white dark:hover:bg-slate-800 transition-all group/lec">
+                                          <div className="flex justify-between items-start mb-4">
+                                            <span className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-black">
+                                              {lIdx + 1}
+                                            </span>
                                             <div className="flex gap-2">
-                                               {lec.meetingLink && (
-                                                  <a href={lec.meetingLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg font-bold text-xs transition">
-                                                    <Video className="w-3.5 h-3.5"/> Join Live
-                                                  </a>
-                                               )}
-                                               {lec.recordedLink && (
-                                                  <a href={lec.recordedLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 rounded-lg font-bold text-xs transition">
-                                                    <PlayCircle className="w-3.5 h-3.5"/> Watch
-                                                  </a>
-                                               )}
+                                              {lec.meetingLink && (
+                                                <a href={lec.meetingLink} target="_blank" rel="noreferrer" className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
+                                                  <Video className="w-4 h-4" />
+                                                </a>
+                                              )}
+                                              {lec.recordedLink && (
+                                                <a href={lec.recordedLink} target="_blank" rel="noreferrer" className="p-2 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
+                                                  <PlayCircle className="w-4 h-4" />
+                                                </a>
+                                              )}
                                             </div>
                                           </div>
-                                       ))}
+                                          <h4 className="font-bold text-slate-900 dark:text-white mb-1 group-hover/lec:text-purple-500 transition-colors">
+                                            {lec.title}
+                                          </h4>
+                                          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+                                            {lec.meetingLink ? 'Live Interactive' : 'Recorded Session'}
+                                          </p>
+                                        </div>
+                                      ))}
                                     </div>
-                                 )}
+                                  )}
+                                </div>
 
-                                 <div className="flex flex-wrap gap-2 items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
-                                    {role === 'teacher' && (
-                                       <button onClick={() => setShowLectureModal(mod.id)} className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 rounded-xl font-bold text-sm flex items-center gap-2 transition">
-                                          <Plus className="w-4 h-4"/> Add Lecture
-                                       </button>
-                                    )}
-                                    {role === 'student' && (
-                                        <button 
-                                          onClick={() => handleToggleComplete(mod.id)}
-                                          className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition ml-auto ${isCompleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-300'}`}
-                                        >
-                                          {isCompleted ? <CheckCircle2 className="w-4 h-4"/> : <Circle className="w-4 h-4"/>}
-                                          {isCompleted ? 'Completed' : 'Mark Complete'}
-                                        </button>
-                                    )}
-                                 </div>
+                                <div className="flex items-center justify-between pt-8 border-t border-slate-100 dark:border-slate-800">
+                                  {role === 'teacher' && (
+                                    <button onClick={() => setShowLectureModal(mod.id)} className="flex items-center gap-2 px-6 py-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-purple-500 hover:text-white transition-all">
+                                      <Plus className="w-4 h-4" /> Add Lecture
+                                    </button>
+                                  )}
+                                  {role === 'student' && (
+                                    <button 
+                                      onClick={() => handleToggleComplete(mod.id)}
+                                      className={`ml-auto flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                                        isCompleted 
+                                        ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' 
+                                        : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:scale-105 active:scale-95'
+                                      }`}
+                                    >
+                                      {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                                      {isCompleted ? 'Mastered' : 'Mark as Complete'}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                        </div>
-                     </div>
-                   );
-                 })}
-               </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          {/* Sidebar Resources */}
-          <div className="space-y-6">
-            <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
-               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2"><FileText className="w-5 h-5"/> Course Resources</h2>
-               {resources.length === 0 ? (
-                 <p className="text-sm text-slate-500">No global resources shared yet.</p>
-               ) : (
-                 <div className="space-y-3">
-                   {resources.map(res => (
-                     <a key={res.id} href={res.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl hover:bg-slate-50 transition border border-slate-200 dark:border-slate-700">
-                       <LinkIcon className="w-4 h-4 text-emerald-500" />
-                       <span className="font-bold text-sm text-slate-700 dark:text-slate-300 truncate">{res.title}</span>
-                     </a>
-                   ))}
-                 </div>
-               )}
+          {/* Sidebar: Bento Glassmorphism */}
+          <aside className="lg:col-span-4 space-y-8 order-first lg:order-last">
+            {/* Progress Card */}
+            <div className="lg:sticky lg:top-32 space-y-8">
+              <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-purple-600/20 overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                  <Award className="w-32 h-32 rotate-12" />
+                </div>
+                <div className="relative z-10">
+                  <h3 className="text-xl font-black mb-2 uppercase tracking-tight">Your Progress</h3>
+                  <div className="flex items-end gap-2 mb-6">
+                    <span className="text-6xl font-black leading-none">{progressPercent}%</span>
+                    <span className="text-sm font-bold opacity-60 mb-2 uppercase tracking-widest">Complete</span>
+                  </div>
+                  <div className="w-full bg-white/20 h-3 rounded-full overflow-hidden mb-4 backdrop-blur-md">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ duration: 1, ease: "circOut" }}
+                      className="bg-white h-full shadow-[0_0_15px_rgba(255,255,255,0.5)]" 
+                    />
+                  </div>
+                  <p className="text-xs font-bold opacity-80 uppercase tracking-widest">
+                    {completedCount} of {totalCount} milestones mastered
+                  </p>
+                </div>
+              </div>
+
+              {/* Resources Card */}
+              <div className="bg-white dark:bg-slate-900/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-purple-500" />
+                    Vault
+                  </h3>
+                  <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {resources.length} ITEMS
+                  </span>
+                </div>
+
+                {resources.length === 0 ? (
+                  <p className="text-sm text-slate-400 font-medium italic">Vault is currently empty.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {resources.map((res, i) => (
+                      <motion.a 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        key={res.id} 
+                        href={res.url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-purple-500/30 hover:bg-white dark:hover:bg-slate-800 transition-all group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <LinkIcon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate group-hover:text-purple-500 transition-colors">{res.title}</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">External Asset</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-all" />
+                      </motion.a>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
 
-      {/* Modals */}
-      {showModuleModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-           <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-800">
-             <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Create New Module</h2>
-             <form onSubmit={handleCreateModule} className="space-y-4">
-               <input required placeholder="Module Title (e.g. Intro Basics)" value={mTitle} onChange={e=>setMTitle(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500" />
-               <textarea required placeholder="What will be covered in this module?" value={mDesc} onChange={e=>setMDesc(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none" rows={3}></textarea>
-               <div className="w-full bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
-                 <label className="block text-sm font-bold mb-2 text-slate-700 dark:text-slate-300">Thumbnail Image (Optional)</label>
-                 <input 
-                   type="file" 
-                   accept="image/*"
-                   onChange={e => {
-                     if (e.target.files && e.target.files[0]) {
-                       setMThumbFile(e.target.files[0]);
-                     }
-                   }} 
-                   className="w-full focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
-                 />
-                 <p className="text-xs text-slate-500 mt-2 mb-1">Or direct URL:</p>
-                 <input placeholder="https://..." type="url" value={mThumb} onChange={e=>setMThumb(e.target.value)} className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm" />
-               </div>
-               <div className="flex gap-2 justify-end mt-6">
-                 <button type="button" onClick={()=>setShowModuleModal(false)} className="px-6 py-3 font-bold text-slate-500">Cancel</button>
-                 <button type="submit" className="px-6 py-3 font-bold text-white bg-purple-600 rounded-xl">Add Module</button>
-               </div>
-             </form>
-           </div>
-        </div>
-      )}
+      {/* Premium Modals */}
+      <AnimatePresence>
+        {(showModuleModal || showLectureModal || showResourceModal) && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowModuleModal(false);
+                setShowLectureModal(null);
+                setShowResourceModal(false);
+              }}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl"
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden"
+            >
+              <div className="p-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div>
+                    <h2 className="text-3xl font-black tracking-tight mb-2">
+                      {showModuleModal ? 'New Milestone' : showLectureModal ? 'New Session' : 'New Asset'}
+                    </h2>
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Curriculum Deployment</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setShowModuleModal(false);
+                      setShowLectureModal(null);
+                      setShowResourceModal(false);
+                    }} 
+                    className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
-      {showLectureModal !== null && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-           <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-800">
-             <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Add Lecture to Module</h2>
-             <form onSubmit={handleAddLecture} className="space-y-4">
-               <input required placeholder="Lecture Title (e.g. Setup Environment)" value={lTitle} onChange={e=>setLTitle(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-               <input placeholder="Live Meeting Link (Optional)" type="url" value={lMeet} onChange={e=>setLMeet(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-               <input placeholder="Recorded Video Link (Optional)" type="url" value={lRec} onChange={e=>setLRec(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500" />
-               
-               <div className="flex gap-2 justify-end mt-6">
-                 <button type="button" onClick={()=>setShowLectureModal(null)} className="px-6 py-3 font-bold text-slate-500">Cancel</button>
-                 <button type="submit" className="px-6 py-3 font-bold text-white bg-indigo-600 rounded-xl">Add Lecture</button>
-               </div>
-             </form>
-           </div>
-        </div>
-      )}
+                {showModuleModal && (
+                  <form onSubmit={handleCreateModule} className="space-y-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Module Title</label>
+                        <input required placeholder="E.g. Foundational Theory" value={mTitle} onChange={e=>setMTitle(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold border border-transparent focus:border-purple-500 transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mission Description</label>
+                        <textarea required placeholder="What's the core objective?" value={mDesc} onChange={e=>setMDesc(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-medium border border-transparent focus:border-purple-500 transition-all resize-none" rows={3} />
+                      </div>
+                      <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                        <label className="flex flex-col items-center gap-2 cursor-pointer">
+                          <Upload className="w-6 h-6 text-slate-400" />
+                          <span className="text-xs font-bold text-slate-500">{mThumbFile ? mThumbFile.name : 'Upload Thumbnail'}</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={e => e.target.files && setMThumbFile(e.target.files[0])} />
+                        </label>
+                      </div>
+                    </div>
+                    <button type="submit" className="w-full py-5 bg-purple-600 text-white font-black rounded-[2rem] shadow-xl shadow-purple-600/20 hover:scale-[1.02] transition-all">
+                      DEPLOY MODULE
+                    </button>
+                  </form>
+                )}
 
-      {showResourceModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-           <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-800">
-             <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Add Global Resource</h2>
-             <form onSubmit={handleCreateResource} className="space-y-4">
-               <input required placeholder="Resource Title (e.g. Reference Book PDF)" value={rTitle} onChange={e=>setRTitle(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-               <input required placeholder="Link to Resource (Drive/Dropbox/etc)" type="url" value={rUrl} onChange={e=>setRUrl(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-xl mx-auto dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-               <div className="flex gap-2 justify-end mt-6">
-                 <button type="button" onClick={()=>setShowResourceModal(false)} className="px-6 py-3 font-bold text-slate-500">Cancel</button>
-                 <button type="submit" className="px-6 py-3 font-bold text-white bg-emerald-600 rounded-xl">Add Resource</button>
-               </div>
-             </form>
-           </div>
-        </div>
-      )}
+                {showLectureModal && (
+                  <form onSubmit={handleAddLecture} className="space-y-6">
+                    <div className="space-y-4">
+                      <input required placeholder="Session Title" value={lTitle} onChange={e=>setLTitle(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold border border-transparent focus:border-purple-500 transition-all" />
+                      <input placeholder="Live Meeting Link (Optional)" type="url" value={lMeet} onChange={e=>setLMeet(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold border border-transparent focus:border-blue-500 transition-all" />
+                      <input placeholder="Recording Link (Optional)" type="url" value={lRec} onChange={e=>setLRec(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold border border-transparent focus:border-rose-500 transition-all" />
+                    </div>
+                    <button type="submit" className="w-full py-5 bg-indigo-600 text-white font-black rounded-[2rem] shadow-xl shadow-indigo-600/20 hover:scale-[1.02] transition-all">
+                      SYNC SESSION
+                    </button>
+                  </form>
+                )}
+
+                {showResourceModal && (
+                  <form onSubmit={handleCreateResource} className="space-y-6">
+                    <div className="space-y-4">
+                      <input required placeholder="Asset Title" value={rTitle} onChange={e=>setRTitle(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold border border-transparent focus:border-emerald-500 transition-all" />
+                      <input required placeholder="Direct URL (Drive/Dropbox)" type="url" value={rUrl} onChange={e=>setRUrl(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold border border-transparent focus:border-emerald-500 transition-all" />
+                    </div>
+                    <button type="submit" className="w-full py-5 bg-emerald-600 text-white font-black rounded-[2rem] shadow-xl shadow-emerald-600/20 hover:scale-[1.02] transition-all">
+                      UPLOAD ASSET
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

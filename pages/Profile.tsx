@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserObject } from '../types';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 
 const Profile: React.FC = () => {
@@ -26,15 +27,6 @@ const Profile: React.FC = () => {
 
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    if (!loading && userProfile && containerRef.current) {
-      gsap.fromTo(containerRef.current, 
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-      );
-    }
-  }, [loading, userProfile]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
@@ -120,14 +112,21 @@ const Profile: React.FC = () => {
   if (!userProfile) return null;
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-3xl mx-auto" ref={containerRef}>
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen pt-32 pb-32 px-6 bg-slate-50 dark:bg-[#020617] relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-3xl mx-auto relative z-10"
+        ref={containerRef}
+      >
+        <div className="flex items-center justify-between mb-10">
            <div className="flex items-center gap-4">
-               <Link to="/dashboard" className="p-2 text-slate-500 hover:text-emerald-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors">
+               <Link to="/dashboard" className="p-2.5 text-slate-500 hover:text-emerald-600 bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-slate-200/50 dark:border-slate-800/50 rounded-2xl transition-colors shadow-sm">
                   <ArrowLeft className="w-5 h-5" />
                </Link>
-               <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Your Profile</h1>
+               <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Your Profile</h1>
            </div>
            
            {!isEditing && (
@@ -137,7 +136,7 @@ const Profile: React.FC = () => {
            )}
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200 dark:shadow-slate-950">
+        <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-2xl rounded-[2.5rem] p-10 border border-slate-200/50 dark:border-slate-800/50 shadow-2xl">
            
            <div className="flex flex-col md:flex-row items-center gap-8 mb-10 pb-10 border-b border-slate-100 dark:border-slate-800">
              <div className="relative group">
@@ -167,8 +166,8 @@ const Profile: React.FC = () => {
                 )}
              </div>
              <div className="text-center md:text-left flex-1">
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white capitalize mb-1">{userProfile.name}</h2>
-                <p className="text-slate-500 text-lg">{userProfile.email || user?.email}</p>
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white capitalize mb-1 tracking-tight">{userProfile.name}</h2>
+                <p className="text-slate-500 text-lg font-medium">{userProfile.email || user?.email}</p>
              </div>
            </div>
 
@@ -248,7 +247,7 @@ const Profile: React.FC = () => {
               </div>
            </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
