@@ -1,91 +1,77 @@
-import React, { useRef } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { ServerCrash, Users, Activity } from 'lucide-react';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const problems = [
   {
-    icon: <ServerCrash className="w-10 h-10 text-rose-500 dark:text-rose-400 group-hover:scale-110 transition-transform" />,
-    title: "Outdated Infrastructure",
-    description: "Schools rely on fragmented legacy software, leading to communication gaps and missing data."
+    icon: <ServerCrash className="w-8 h-8 text-rose-500" />,
+    title: "Fragmented Infrastructure",
+    description: "Schools rely on monolithic legacy software, creating extreme data silos, communication gaps, and security vulnerabilities."
   },
   {
-    icon: <Users className="w-10 h-10 text-amber-500 dark:text-amber-400 group-hover:scale-110 transition-transform" />,
-    title: "Poor Engagement",
-    description: "Traditional classroom models fail to effectively capture the attention of digital-native students."
+    icon: <Users className="w-8 h-8 text-amber-500" />,
+    title: "Retention Plummets",
+    description: "Traditional analog models fail to effectively capture the dopamine loops necessary to engage digital-native students."
   },
   {
-    icon: <Activity className="w-10 h-10 text-blue-500 dark:text-blue-400 group-hover:scale-110 transition-transform" />,
-    title: "No Real-Time Tracking",
-    description: "Teachers and parents lack instant analytics into student performance, attendance, and health."
+    icon: <Activity className="w-8 h-8 text-blue-500" />,
+    title: "Analytics Blindspots",
+    description: "Administrators and parents lack instant, data-driven analytics into student performance, forcing reactive rather than proactive guidance."
   }
 ];
 
-const ProblemSection: React.FC = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useGSAP(() => {
-    if(!sectionRef.current) return;
-    
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top 80%',
-      }
-    });
-
-    tl.fromTo('.prob-header',
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' }
-    )
-    .fromTo('.prob-card',
-      { opacity: 0, y: 50, scale: 0.95 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.2, ease: 'back.out(1.2)' },
-      '-=0.3'
-    );
-  }, { scope: sectionRef });
-
+const Card = ({ problem, index }: { problem: any, index: number }) => {
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 bg-white dark:bg-slate-900 transition-colors duration-300 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-500/5 dark:bg-rose-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-      
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20 flex flex-col items-center">
-          <div className="prob-header px-4 py-1.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider text-xs mb-6 shadow-sm border border-rose-200 dark:border-rose-800/50">
-            The Current Challenge
-          </div>
-          <h2 className="prob-header text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
-            Why Schools Are <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-500">Falling Behind</span>
-          </h2>
-          <p className="prob-header text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl">
-            Education hasn't evolved as fast as the rest of the world. We identified three major bottlenecks hindering school growth.
-          </p>
-        </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 p-10 md:p-14 rounded-[2.5rem] shadow-xl shadow-slate-200/20 dark:shadow-none hover:shadow-2xl transition-all duration-500 group"
+    >
+      <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-[1.5rem] flex items-center justify-center mb-8 ring-1 ring-slate-100 dark:ring-slate-700 group-hover:scale-110 transition-transform duration-500 shadow-sm">
+        {problem.icon}
+      </div>
+      <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">{problem.title}</h3>
+      <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg font-medium">
+        {problem.description}
+      </p>
+    </motion.div>
+  );
+};
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-          {problems.map((problem, idx) => (
-            <div 
-              key={idx}
-              className="prob-card group bg-slate-50 dark:bg-slate-800/50 p-10 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:shadow-rose-500/10 hover:border-rose-500/30 transition-all duration-500 relative overflow-hidden flex flex-col h-full"
+const ProblemSection: React.FC = () => {
+  return (
+    <section className="py-24 md:py-40 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 relative overflow-hidden">
+      <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+        <div className="flex flex-col lg:flex-row gap-16 lg:gap-32 relative items-start">
+          
+          <div className="lg:w-5/12 lg:sticky top-40 z-20">
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
             >
-              {/* Card hover effect BG */}
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-500/0 to-orange-500/0 group-hover:from-rose-500/5 group-hover:to-orange-500/5 transition-colors duration-500" />
-              
-              <div className="relative z-10 flex-grow flex flex-col">
-                <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-[1.5rem] flex items-center justify-center mb-8 shadow-sm border border-slate-100 dark:border-slate-800 group-hover:-translate-y-2 transition-transform duration-500">
-                  {problem.icon}
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 group-hover:text-rose-500 dark:group-hover:text-rose-400 transition-colors">{problem.title}</h3>
-                <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg flex-grow">
-                  {problem.description}
-                </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 font-bold tracking-widest uppercase text-xs mb-8 shadow-sm">
+                The Disconnect
               </div>
-            </div>
-          ))}
+              <h2 className="text-5xl lg:text-[4.5rem] font-black text-slate-900 dark:text-white mb-8 tracking-tighter leading-[0.95]">
+                Why Legacy <br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-500">Systems Fail</span>
+              </h2>
+              <p className="text-xl text-slate-600 dark:text-slate-400 max-w-md leading-relaxed font-medium">
+                Education architecture hasn't evolved alongside modern cloud frameworks. We've identified critical structural bottlenecks hindering scalable institutional growth.
+              </p>
+            </motion.div>
+          </div>
+
+          <div className="lg:w-7/12 flex flex-col gap-8 pb-10 z-10 w-full">
+            {problems.map((problem, idx) => (
+              <Card key={idx} problem={problem} index={idx} />
+            ))}
+          </div>
+
         </div>
       </div>
     </section>

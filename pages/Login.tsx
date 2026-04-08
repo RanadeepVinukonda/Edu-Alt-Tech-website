@@ -4,8 +4,7 @@ import { ArrowLeft, Lock, Mail, Loader2 } from 'lucide-react';
 // Fix modular imports for Firebase Auth
 import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion } from 'framer-motion';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,13 +14,6 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const formRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    gsap.fromTo(formRef.current, 
-      { opacity: 0, y: 50, scale: 0.95 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }
-    );
-  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,15 +64,22 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950 flex flex-col items-center">
-      <Link to="/" className="mb-12 inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-[#020617] flex flex-col items-center relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 w-[800px] h-[800px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <Link to="/" className="mb-12 inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative z-10">
         <ArrowLeft className="w-4 h-4" /> Back to Home
       </Link>
 
-      <div ref={formRef} className="w-full max-w-md bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200 dark:shadow-slate-950 border border-slate-100 dark:border-slate-800">
+      <motion.div
+        ref={formRef}
+        initial={{ opacity: 0, y: 40, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-md bg-white/90 dark:bg-slate-900/80 backdrop-blur-2xl p-10 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-slate-950 border border-slate-200/50 dark:border-slate-800/50 relative z-10"
+      >
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Welcome Back</h1>
-          <p className="text-slate-500 dark:text-slate-400">Continue your execution journey.</p>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Welcome Back</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Continue your execution journey.</p>
         </div>
 
         {error && (
@@ -168,7 +167,7 @@ const Login: React.FC = () => {
             </p>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };
