@@ -6,8 +6,8 @@ import { Course, CourseEnrollment } from '../types';
 import { ArrowLeft, CheckCircle2, Clock, Users, BookOpen, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 const CourseDetails: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -21,15 +21,6 @@ const CourseDetails: React.FC = () => {
   const [selectedMentor, setSelectedMentor] = useState<string | null>(null);
   
   const contentRef = React.useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    if (!loading && course) {
-      gsap.fromTo(contentRef.current, 
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
-      );
-    }
-  }, [loading, course]);
 
   useEffect(() => {
     const fetchCourseAndEnrollment = async (currentUser: FirebaseUser | null) => {
@@ -156,7 +147,7 @@ const CourseDetails: React.FC = () => {
         });
       } catch (e) { console.error("Email failed", e); }
 
-      alert("You have successfully enrolled in the course!");
+      toast.success("You have successfully enrolled in the course!");
     } catch (err) {
       console.error(err);
       alert("Failed to finalize enrollment. Please contact support.");
@@ -287,25 +278,28 @@ const CourseDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-4xl mx-auto" ref={contentRef}>
-        <Link to="/courses" className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-8">
+    <div className="min-h-screen pt-32 pb-32 px-6 bg-slate-50 dark:bg-[#020617] relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-4xl mx-auto relative z-10"
+        ref={contentRef}
+      >
+        <Link to="/courses" className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-10 font-medium">
           <ArrowLeft className="w-4 h-4" /> Back to Courses
         </Link>
 
         {/* Hero Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 md:p-12 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200 dark:shadow-slate-950 mb-8">
+        <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-2xl rounded-[2.5rem] p-10 md:p-14 border border-slate-200/50 dark:border-slate-800/50 shadow-2xl mb-8">
           <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
             <div>
               <div className={`mb-4 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${course.category === 'education' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
                 {course.category}
               </div>
-              <h1 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">{course.title}</h1>
-              {course.thumbnail && (
-                <img src={course.thumbnail} alt={course.title} className="w-full h-64 md:h-96 object-cover rounded-3xl mb-6 shadow-lg border border-slate-100 dark:border-slate-800" />
-              )}
-              <p className="text-xl text-slate-600 dark:text-slate-400">{course.description}</p>
-
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 tracking-tight leading-[1.05]">{course.title}</h1>
+              <p className="text-xl text-slate-600 dark:text-slate-400 font-medium">{course.description}</p>
             </div>
             <div className="flex flex-col items-start md:items-end flex-shrink-0">
                <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
@@ -409,7 +403,7 @@ const CourseDetails: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl flex flex-col justify-center items-center text-center shadow-sm">
+                <div className="flex-1 bg-slate-50/80 dark:bg-slate-800/40 backdrop-blur border border-purple-200/50 dark:border-purple-900/30 p-6 rounded-2xl flex flex-col justify-center items-center text-center shadow-sm">
                   <h3 className="text-lg font-bold mb-2 flex items-center justify-center gap-2"><Users className="w-5 h-5 text-purple-500"/> Teach this Course</h3>
                   <p className="text-slate-500 text-sm mb-4 max-w-sm">
                     Are you qualified to teach this subject? Apply to become a mentor and start teaching students securely.
@@ -425,7 +419,7 @@ const CourseDetails: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

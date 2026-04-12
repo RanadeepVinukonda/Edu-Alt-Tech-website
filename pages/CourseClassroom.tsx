@@ -4,12 +4,11 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serv
 import { auth, db, storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Course, CourseEnrollment, CourseModule, ModuleLecture, CourseResource } from '../types';
-import { ArrowLeft, BookOpen, Video, FileText, Plus, Link as LinkIcon, Loader2, PlayCircle, CheckCircle2, Circle, ChevronRight, Clock, Award, Layout, Zap, X, Upload, ExternalLink, MessageCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Video, FileText, Plus, Link as LinkIcon, Loader2, PlayCircle, CheckCircle2, Circle, ChevronRight, Clock, Award, Layout, Zap, X, Upload, ExternalLink } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import Chat from '../components/Chat';
 
 const CourseClassroom: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -24,6 +23,9 @@ const CourseClassroom: React.FC = () => {
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [resources, setResources] = useState<CourseResource[]>([]);
   const [activeTab, setActiveTab] = useState<'roadmap' | 'chat'>('roadmap');
+
+  // Active Expand States
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
 
   // Active Expand States
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
@@ -135,6 +137,7 @@ const CourseClassroom: React.FC = () => {
 
       await addDoc(collection(db, 'course_modules'), {
         courseId,
+        moduleId: selectedModuleId,
         teacherId: user.uid,
         title: mTitle,
         description: mDesc,
@@ -279,202 +282,164 @@ const CourseClassroom: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Main Content: Immersive Roadmap */}
+          <div className="lg:col-span-8 space-y-12">
             <div className="flex items-center justify-between">
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => setActiveTab('roadmap')}
-                  className={`text-2xl font-black tracking-tight flex items-center gap-3 transition-all ${activeTab === 'roadmap' ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}
-                >
-                  <Layout className="w-6 h-6 text-purple-500" />
-                  Roadmap
-                </button>
-                <button 
-                  onClick={() => setActiveTab('chat')}
-                  className={`text-2xl font-black tracking-tight flex items-center gap-3 transition-all ${activeTab === 'chat' ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}
-                >
-                  <MessageCircle className={`w-6 h-6 ${activeTab === 'chat' ? 'text-emerald-500' : 'text-slate-400'}`} />
-                  Discussion
-                </button>
-              </div>
+              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                <Layout className="w-6 h-6 text-purple-500" />
+                Curriculum Roadmap
+              </h2>
             </div>
 
-            <AnimatePresence mode="wait">
-              {activeTab === 'roadmap' ? (
-                <motion.div
-                  key="roadmap"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                >
-                  {modules.length === 0 ? (
-                    <div className="py-24 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
-                      <Zap className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                      <p className="text-slate-500 font-bold">Awaiting curriculum deployment...</p>
-                    </div>
-                  ) : (
-                    <div className="relative space-y-12 pb-20">
-                      {/* Visual Timeline Connector */}
-                      <div className="absolute left-[39px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-purple-500 via-indigo-500 to-transparent opacity-20 hidden md:block" />
+            {modules.length === 0 ? (
+              <div className="py-24 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                <Zap className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-bold">Awaiting curriculum deployment...</p>
+              </div>
+            ) : (
+              <div className="relative space-y-12 pb-20">
+                {/* Visual Timeline Connector */}
+                <div className="absolute left-[39px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-purple-500 via-indigo-500 to-transparent opacity-20 hidden md:block" />
 
-                      {modules.map((mod, idx) => {
-                        const isCompleted = enrollment?.completedModules?.includes(mod.id);
-                        const isExpanded = expandedModules.includes(mod.id);
-                        const isOdd = idx % 2 !== 0;
+                {modules.map((mod, idx) => {
+                  const isCompleted = enrollment?.completedModules?.includes(mod.id);
+                  const isExpanded = expandedModules.includes(mod.id);
+                  const isOdd = idx % 2 !== 0;
 
-                        return (
-                          <motion.div 
-                            key={mod.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="relative md:pl-20"
-                          >
-                            {/* Milestone Marker */}
-                            <div className={`absolute left-[30px] top-10 w-5 h-5 rounded-full border-4 border-slate-50 dark:border-[#020617] z-20 transition-all duration-500 hidden md:flex items-center justify-center ${
-                              isCompleted ? 'bg-emerald-500 scale-125 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-slate-300 dark:bg-slate-800'
-                            }`} />
+                  return (
+                    <motion.div 
+                      key={mod.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="relative md:pl-20"
+                    >
+                      {/* Milestone Marker */}
+                      <div className={`absolute left-[30px] top-10 w-5 h-5 rounded-full border-4 border-slate-50 dark:border-[#020617] z-20 transition-all duration-500 hidden md:flex items-center justify-center ${
+                        isCompleted ? 'bg-emerald-500 scale-125 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-slate-300 dark:bg-slate-800'
+                      }`} />
 
-                            <div className={`group bg-white dark:bg-slate-900/80 backdrop-blur-xl border-2 rounded-[2.5rem] transition-all duration-500 overflow-hidden ${
-                              isCompleted ? 'border-emerald-500/20 shadow-emerald-500/5' : 'border-slate-200/50 dark:border-slate-800 shadow-xl'
-                            } ${isExpanded ? 'shadow-2xl border-purple-500/30' : 'hover:-translate-y-1 hover:border-purple-500/30'}`}>
-                              
-                              <div className="p-8 md:p-10 cursor-pointer" onClick={() => toggleModule(mod.id)}>
-                                <div className="flex flex-col md:flex-row gap-8 items-start">
-                                  <div className={`w-20 h-20 md:w-24 md:h-24 rounded-3xl overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${isCompleted ? 'ring-4 ring-emerald-500/20' : ''}`}>
-                                    {mod.thumbnailUrl ? (
-                                      <img src={mod.thumbnailUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
-                                    ) : (
-                                      <span className="text-3xl font-black text-slate-300 dark:text-slate-700">{idx + 1}</span>
-                                    )}
-                                  </div>
+                      <div className={`group bg-white dark:bg-slate-900/80 backdrop-blur-xl border-2 rounded-[2.5rem] transition-all duration-500 overflow-hidden ${
+                        isCompleted ? 'border-emerald-500/20 shadow-emerald-500/5' : 'border-slate-200/50 dark:border-slate-800 shadow-xl'
+                      } ${isExpanded ? 'shadow-2xl border-purple-500/30' : 'hover:-translate-y-1 hover:border-purple-500/30'}`}>
+                        
+                        <div className="p-8 md:p-10 cursor-pointer" onClick={() => toggleModule(mod.id)}>
+                          <div className="flex flex-col md:flex-row gap-8 items-start">
+                            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-3xl overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${isCompleted ? 'ring-4 ring-emerald-500/20' : ''}`}>
+                              {mod.thumbnailUrl ? (
+                                <img src={mod.thumbnailUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                              ) : (
+                                <span className="text-3xl font-black text-slate-300 dark:text-slate-700">{idx + 1}</span>
+                              )}
+                            </div>
 
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-start mb-4">
-                                      <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight group-hover:text-purple-500 transition-colors">
-                                        {mod.title}
-                                      </h3>
-                                      {isCompleted && (
-                                        <span className="flex items-center gap-1.5 text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full">
-                                          <Award className="w-3 h-3" /> Mastered
-                                        </span>
-                                      )}
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight group-hover:text-purple-500 transition-colors">
+                                  {mod.title}
+                                </h3>
+                                {isCompleted && (
+                                  <span className="flex items-center gap-1.5 text-emerald-500 font-black text-[10px] uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full">
+                                    <Award className="w-3 h-3" /> Mastered
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 line-clamp-2">
+                                {mod.description}
+                              </p>
+                              <div className="flex items-center gap-4">
+                                <div className="flex -space-x-2">
+                                  {[1,2,3].map(i => (
+                                    <div key={i} className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-800" />
+                                  ))}
+                                </div>
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                  {mod.lectures?.length || 0} Sessions • Interactive
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className={`mt-4 md:mt-0 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}>
+                              <ChevronRight className="w-6 h-6 text-slate-400" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-8 pb-10 md:px-10 space-y-6">
+                                <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
+                                  {(!mod.lectures || mod.lectures.length === 0) ? (
+                                    <p className="text-sm text-slate-400 italic font-medium">No sessions scheduled for this module yet.</p>
+                                  ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {mod.lectures.map((lec, lIdx) => (
+                                        <div key={lec.id} className="p-5 bg-slate-50/50 dark:bg-slate-800/30 rounded-3xl border border-transparent hover:border-purple-500/20 hover:bg-white dark:hover:bg-slate-800 transition-all group/lec">
+                                          <div className="flex justify-between items-start mb-4">
+                                            <span className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-black">
+                                              {lIdx + 1}
+                                            </span>
+                                            <div className="flex gap-2">
+                                              {lec.meetingLink && (
+                                                <a href={lec.meetingLink} target="_blank" rel="noreferrer" className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
+                                                  <Video className="w-4 h-4" />
+                                                </a>
+                                              )}
+                                              {lec.recordedLink && (
+                                                <a href={lec.recordedLink} target="_blank" rel="noreferrer" className="p-2 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
+                                                  <PlayCircle className="w-4 h-4" />
+                                                </a>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <h4 className="font-bold text-slate-900 dark:text-white mb-1 group-hover/lec:text-purple-500 transition-colors">
+                                            {lec.title}
+                                          </h4>
+                                          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+                                            {lec.meetingLink ? 'Live Interactive' : 'Recorded Session'}
+                                          </p>
+                                        </div>
+                                      ))}
                                     </div>
-                                    <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed mb-6 line-clamp-2">
-                                      {mod.description}
-                                    </p>
-                                    <div className="flex items-center gap-4">
-                                      <div className="flex -space-x-2">
-                                        {[1,2,3].map(i => (
-                                          <div key={i} className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-800" />
-                                        ))}
-                                      </div>
-                                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                        {mod.lectures?.length || 0} Sessions • Interactive
-                                      </span>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className={`mt-4 md:mt-0 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}>
-                                    <ChevronRight className="w-6 h-6 text-slate-400" />
-                                  </div>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-8 border-t border-slate-100 dark:border-slate-800">
+                                  {role === 'teacher' && (
+                                    <button onClick={() => setShowLectureModal(mod.id)} className="flex items-center gap-2 px-6 py-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-purple-500 hover:text-white transition-all">
+                                      <Plus className="w-4 h-4" /> Add Lecture
+                                    </button>
+                                  )}
+                                  {role === 'student' && (
+                                    <button 
+                                      onClick={() => handleToggleComplete(mod.id)}
+                                      className={`ml-auto flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                                        isCompleted 
+                                        ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' 
+                                        : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:scale-105 active:scale-95'
+                                      }`}
+                                    >
+                                      {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                                      {isCompleted ? 'Mastered' : 'Mark as Complete'}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
-
-                              <AnimatePresence>
-                                {isExpanded && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
-                                  >
-                                    <div className="px-8 pb-10 md:px-10 space-y-6">
-                                      <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
-                                        {(!mod.lectures || mod.lectures.length === 0) ? (
-                                          <p className="text-sm text-slate-400 italic font-medium">No sessions scheduled for this module yet.</p>
-                                        ) : (
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {mod.lectures.map((lec, lIdx) => (
-                                              <div key={lec.id} className="p-5 bg-slate-50/50 dark:bg-slate-800/30 rounded-3xl border border-transparent hover:border-purple-500/20 hover:bg-white dark:hover:bg-slate-800 transition-all group/lec">
-                                                <div className="flex justify-between items-start mb-4">
-                                                  <span className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-black">
-                                                    {lIdx + 1}
-                                                  </span>
-                                                  <div className="flex gap-2">
-                                                    {lec.meetingLink && (
-                                                      <a href={lec.meetingLink} target="_blank" rel="noreferrer" className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
-                                                        <Video className="w-4 h-4" />
-                                                      </a>
-                                                    )}
-                                                    {lec.recordedLink && (
-                                                      <a href={lec.recordedLink} target="_blank" rel="noreferrer" className="p-2 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
-                                                        <PlayCircle className="w-4 h-4" />
-                                                      </a>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                                <h4 className="font-bold text-slate-900 dark:text-white mb-1 group-hover/lec:text-purple-500 transition-colors">
-                                                  {lec.title}
-                                                </h4>
-                                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-                                                  {lec.meetingLink ? 'Live Interactive' : 'Recorded Session'}
-                                                </p>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="flex items-center justify-between pt-8 border-t border-slate-100 dark:border-slate-800">
-                                        {role === 'teacher' && (
-                                          <button onClick={() => setShowLectureModal(mod.id)} className="flex items-center gap-2 px-6 py-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-purple-500 hover:text-white transition-all">
-                                            <Plus className="w-4 h-4" /> Add Lecture
-                                          </button>
-                                        )}
-                                        {role === 'student' && (
-                                          <button 
-                                            onClick={() => handleToggleComplete(mod.id)}
-                                            className={`ml-auto flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
-                                              isCompleted 
-                                              ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' 
-                                              : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:scale-105 active:scale-95'
-                                            }`}
-                                          >
-                                            {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
-                                            {isCompleted ? 'Mastered' : 'Mark as Complete'}
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="chat"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="h-[600px]"
-                >
-                  {user && (
-                    <Chat 
-                      user={user} 
-                      courseId={courseId!} 
-                      role={role === 'teacher' ? 'mentor' : 'student'} 
-                    />
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Sidebar: Bento Glassmorphism */}
