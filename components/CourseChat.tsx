@@ -153,13 +153,13 @@ const CourseChat: React.FC<ChatProps> = ({ courseId, currentUser, mentorId, role
           onClick={() => setActiveTab('community')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'community' ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
         >
-          <Hash className="w-4 h-4" /> {role === 'teacher' ? 'Course Channel' : 'Community'}
+          <Hash className="w-4 h-4" /> Course Channel
         </button>
         <button 
           onClick={() => setActiveTab('direct')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'direct' ? 'bg-white dark:bg-slate-800 text-purple-600 shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
         >
-          <MessageCircle className="w-4 h-4" /> {role === 'teacher' ? 'Student DMs' : 'DM Mentor'}
+          <MessageCircle className="w-4 h-4" /> {role === 'teacher' ? 'Private DMs' : 'DM Mentor'}
         </button>
       </div>
 
@@ -187,6 +187,28 @@ const CourseChat: React.FC<ChatProps> = ({ courseId, currentUser, mentorId, role
 
         {/* Message Area */}
         <div className="flex-1 flex flex-col bg-slate-50/30 dark:bg-slate-950/20">
+          {/* identity Header */}
+          <div className="px-6 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+               <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                  <User className="w-4 h-4 text-slate-500" />
+               </div>
+               <div>
+                  <h4 className="text-sm font-bold truncate">
+                    {activeTab === 'community' ? 'Course Broadcast' : (role === 'teacher' ? (students.find(s => s.uid === selectedStudentId)?.name || 'Select Student') : 'Course Mentor')}
+                  </h4>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    {activeTab === 'community' ? 'Whole Students Channel' : (role === 'teacher' ? 'Student Participant' : 'Primary Instructor')}
+                  </p>
+               </div>
+            </div>
+            {activeTab === 'community' && role === 'teacher' && (
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/20 uppercase tracking-widest">
+                Instructor Mode
+              </span>
+            )}
+          </div>
+
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {loading ? (
               <div className="h-full flex items-center justify-center">
@@ -210,7 +232,12 @@ const CourseChat: React.FC<ChatProps> = ({ courseId, currentUser, mentorId, role
                 return (
                   <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                     {showName && !isMe && (
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1">{msg.senderName}</span>
+                      <div className="flex items-center gap-2 ml-2 mb-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{msg.senderName}</span>
+                        {msg.senderId === mentorId && (
+                          <span className="text-[8px] font-black text-emerald-500 border border-emerald-500/30 px-1.5 rounded uppercase">Mentor</span>
+                        )}
+                      </div>
                     )}
                     <div className={`max-w-[85%] px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${isMe ? 'bg-slate-900 text-white dark:bg-emerald-600 rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none'}`}>
                        {msg.text}

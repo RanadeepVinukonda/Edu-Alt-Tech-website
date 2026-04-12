@@ -15,11 +15,12 @@ service cloud.firestore {
       return isSignedIn() && (request.auth.uid == userId || request.auth.token.email == "viranadeep@gmail.com");
     }
 
-    // Helper to check if a user is the designated author of a course item
+    // Helper to check if a user is the designated author of a data object
     function isAuthor(data) {
       return isSignedIn() && (
         data.teacherId == request.auth.uid || 
         data.userId == request.auth.uid || 
+        data.senderId == request.auth.uid ||
         isAdmin()
       );
     }
@@ -43,16 +44,29 @@ service cloud.firestore {
 
     // --- Course Enrollments ---
     match /enrollments/{enrollmentId} {
-      allow read: if isSignedIn(); // Allow students to see state and peer counts
+      allow read: if isSignedIn(); 
       allow create: if isSignedIn();
       allow update, delete: if isOwner(resource.data.userId); 
     }
 
-    // --- Chat & Communication ---
-    match /messages/{messageId} {
-      allow read: if isSignedIn();
+    // --- Advanced Chat & Communication ---
+    // Supports Course Broadcast Channels and Private Mentor-Student DMs
+    match /chats/{chatId} {
+      allow read: if isSignedIn() && (
+        resource.data.type == 'community' || 
+        request.auth.uid in resource.data.participants
+      );
       allow create: if isSignedIn();
-      allow update, delete: if isAuthor(resource.data);
+      
+      match /messages/{msgId} {
+        // Only members of the parent chat can read messages
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/chats/$(chatId)).data.type == 'community' ||
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+        );
+        allow create: if isSignedIn();
+        allow update, delete: if isAuthor(resource.data);
+      }
     }
     
     match /mail/{mailId} {
@@ -62,15 +76,10 @@ service cloud.firestore {
 
     // --- Classroom Logic (Mentors can manage their own content) ---
     
-    match /modules/{id} {
+    // Fixed: Collection name matches code 'course_modules'
+    match /course_modules/{id} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn(); // We rely on app logic to set teacherId, and write/update to verify it
-      allow update, delete: if isAuthor(resource.data);
-    }
-    
-    match /lectures/{id} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
+      allow create: if isSignedIn(); 
       allow update, delete: if isAuthor(resource.data);
     }
     

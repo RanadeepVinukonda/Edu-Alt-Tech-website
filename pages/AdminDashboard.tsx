@@ -13,7 +13,7 @@ const ADMIN_EMAIL = 'viranadeep@gmail.com';
 
 const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'courses' | 'users' | 'appointments' | 'patchnotes'>('courses');
+  const [activeTab, setActiveTab] = useState<'courses' | 'users' | 'appointments' | 'patchnotes' | 'system'>('courses');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -221,6 +221,32 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const wipeAllData = async () => {
+    if (!window.confirm("CRITICAL WARNING: This will PERMANENTLY DELETE all data in the Firebase database (Users, Courses, Chats, etc.). This action cannot be undone. Proceed?")) return;
+    
+    setLoading(true);
+    try {
+      const collections = [
+        'users', 'courses', 'enrollments', 'chats', 'teacher_applications', 
+        'resources', 'course_modules', 'patch_notes', 'notifications', 'mail'
+      ];
+
+      for (const colName of collections) {
+         const snap = await getDocs(collection(db, colName));
+         for (const d of snap.docs) {
+            await deleteDoc(doc(db, colName, d.id));
+         }
+      }
+      toast.success("Database Wiped Successfully");
+      fetchData();
+    } catch (err) {
+      console.error("Wipe failed", err);
+      toast.error("Wipe failed: Check permissions");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFinalVerdictTeacher = async (appId: string, emailStr: string | undefined, verdict: 'approved' | 'rejected') => {
     try {
       await updateDoc(doc(db, 'teacher_applications', appId), {
@@ -363,6 +389,7 @@ const AdminDashboard: React.FC = () => {
                   { id: 'users', label: 'User Base', icon: Users },
                   { id: 'appointments', label: 'Applications', icon: CalendarClock },
                   { id: 'patchnotes', label: 'Patch Notes', icon: Database },
+                  { id: 'system', label: 'System', icon: Settings },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -697,6 +724,30 @@ const AdminDashboard: React.FC = () => {
                 </div>
               )}
             </motion.div>
+             {/* System Management Tab */}
+             {activeTab === 'system' && (
+               <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl">
+                  <div className="flex items-center gap-4 mb-8">
+                     <span className="p-4 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-3xl">
+                        <Trash2 className="w-8 h-8" />
+                     </span>
+                     <div>
+                        <h3 className="text-2xl font-black tracking-tight">Danger Zone</h3>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Administrative Reset Tools</p>
+                     </div>
+                  </div>
+                  <div className="p-8 border-2 border-dashed border-red-500/20 rounded-[2.5rem] bg-red-500/5">
+                     <h4 className="text-lg font-black mb-2 text-red-600">Factory Reset Database</h4>
+                     <p className="text-slate-500 dark:text-slate-400 font-medium mb-6 text-sm">This operation will delete all documents in all collections (Courses, Users, Enrollments, Chats, etc.). Use this for a fresh start during staging or migration.</p>
+                     <button 
+                       onClick={wipeAllData}
+                       className="px-8 py-4 bg-red-600 text-white font-black rounded-2xl shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all flex items-center gap-2"
+                     >
+                       <Database className="w-5 h-5" /> PERFORM SYSTEM WIPE
+                     </button>
+                  </div>
+               </div>
+             )}
           </AnimatePresence>
         </div>
       </main>
@@ -764,43 +815,42 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </section>
                   )}
-
-                  {selectedApp.status === 'pending' && (
+                   {(selectedApp.status === 'pending' || selectedApp.status === 'scheduled') && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
-                      <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] mb-6">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Schedule Interview</label>
-                        <div className="flex gap-4">
-                          <input 
-                            value={meetLink}
-                            onChange={e => setMeetLink(e.target.value)}
-                            placeholder="Paste Google Meet / Zoom Link..." 
-                            className="flex-1 p-4 bg-white dark:bg-slate-900 rounded-2xl outline-none font-bold border border-transparent focus:border-emerald-500 transition-all" 
-                          />
-                          <button 
-                            onClick={() => handleApproveApp(selectedApp.id, selectedApp.userEmail)}
-                            className="px-8 bg-emerald-500 text-white font-black rounded-2xl hover:scale-[1.02] transition-all"
-                          >
-                            SEND
-                          </button>
+                      {selectedApp.status === 'pending' && (
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] mb-6">
+                          <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Schedule Interview</label>
+                          <div className="flex gap-4">
+                            <input 
+                              value={meetLink}
+                              onChange={e => setMeetLink(e.target.value)}
+                              placeholder="Paste Google Meet / Zoom Link..." 
+                              className="flex-1 p-4 bg-white dark:bg-slate-900 rounded-2xl outline-none font-bold border border-transparent focus:border-emerald-500 transition-all" 
+                            />
+                            <button 
+                              onClick={() => handleApproveApp(selectedApp.id, selectedApp.userEmail)}
+                              className="px-8 bg-emerald-500 text-white font-black rounded-2xl hover:scale-[1.02] transition-all"
+                            >
+                              SEND
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
 
-                  {selectedApp.status === 'scheduled' && (
-                    <div className="pt-8 flex gap-4">
-                      <button 
-                        onClick={() => handleFinalVerdictTeacher(selectedApp.id, selectedApp.userEmail, 'approved')}
-                        className="flex-1 py-5 bg-emerald-500 text-white font-black rounded-[2rem] shadow-xl shadow-emerald-500/20"
-                      >
-                        APPROVE MENTOR
-                      </button>
-                      <button 
-                        onClick={() => handleFinalVerdictTeacher(selectedApp.id, selectedApp.userEmail, 'rejected')}
-                        className="flex-1 py-5 bg-red-500 text-white font-black rounded-[2rem] shadow-xl shadow-red-500/20"
-                      >
-                        REJECT APPLICATION
-                      </button>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => handleFinalVerdictTeacher(selectedApp.id, selectedApp.userEmail, 'approved')}
+                          className="flex-1 py-5 bg-emerald-500 text-white font-black rounded-[2rem] shadow-xl shadow-emerald-500/20 hover:scale-[1.01] transition-all"
+                        >
+                          APPROVE MENTOR NOW
+                        </button>
+                        <button 
+                          onClick={() => handleFinalVerdictTeacher(selectedApp.id, selectedApp.userEmail, 'rejected')}
+                          className="flex-1 py-5 bg-red-500 text-white font-black rounded-[2rem] shadow-xl shadow-red-500/20 hover:scale-[1.01] transition-all"
+                        >
+                          REJECT APPLICATION
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
