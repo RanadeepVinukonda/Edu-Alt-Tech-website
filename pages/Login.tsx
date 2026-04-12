@@ -4,7 +4,8 @@ import { ArrowLeft, Lock, Mail, Loader2, Eye, EyeOff } from 'lucide-react';
 // Fix modular imports for Firebase Auth
 import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 const Login: React.FC = () => {
@@ -52,6 +53,33 @@ const Login: React.FC = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
+        // Check if user is new (no Firestore doc)
+        const userRef = doc(db, 'users', result.user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (!userDoc.exists()) {
+          // Create user profile
+          await setDoc(userRef, {
+            name: result.user.displayName || 'User',
+            email: result.user.email,
+            photoURL: result.user.photoURL,
+            createdAt: serverTimestamp()
+          });
+
+          // Trigger Welcome Email
+          try {
+            await setDoc(doc(collection(db, 'mail')), {
+              to: result.user.email,
+              message: {
+                subject: 'Welcome to the Edu-Alt-Tech Community! 🚀',
+                text: `Hi ${result.user.displayName || 'Learner'},\n\nWelcome to Edu-Alt-Tech! We're excited to have you on board. You've taken the first step towards a more disciplined and structured learning journey.\n\nWhat's next?\n1. Explore our high-discipline curricula.\n2. Apply for mentorship or find a mentor for your target subject.\n3. Track your progress daily in your personal dashboard.\n\nWe're here to support you every step of the way.\n\nKeep building,\nThe Edu-Alt-Tech Team`
+              }
+            });
+          } catch (mailErr) {
+            console.error("Welcome email failed", mailErr);
+          }
+        }
+
         if (result.user.email === 'viranadeep@gmail.com') {
           navigate('/admin');
         } else {

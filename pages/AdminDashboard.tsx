@@ -136,6 +136,11 @@ const AdminDashboard: React.FC = () => {
               });
 
               for (const uid of Array.from(userIdsToNotify)) {
+                // Fetch user email for the mail trigger
+                const uDoc = await getDoc(doc(db, 'users', uid));
+                const uData = uDoc.data();
+                
+                // 1. In-app Notification
                 await setDoc(doc(collection(db, 'notifications')), {
                   userId: uid,
                   title: 'Course Deleted',
@@ -144,6 +149,17 @@ const AdminDashboard: React.FC = () => {
                   createdAt: serverTimestamp(),
                   type: 'course_deleted'
                 });
+
+                // 2. Email Notification
+                if (uData?.email) {
+                  await setDoc(doc(collection(db, 'mail')), {
+                    to: uData.email,
+                    message: {
+                      subject: `Important Update: Course "${title}" Removed`,
+                      text: `Hi ${uData.name || 'Student'},\n\nWe wanted to inform you that the course "${title}" has been removed from the platform. If you were enrolled or had an active application, it has been cancelled.\n\nBest,\nThe Edu-Alt-Tech Team`
+                    }
+                  });
+                }
               }
               fetchData();
               toast.success("Course deleted successfully");

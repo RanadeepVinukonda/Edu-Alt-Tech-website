@@ -136,16 +136,33 @@ const CourseDetails: React.FC = () => {
       await setDoc(enrollmentRef, newEnrollment as any);
       setEnrollment(newEnrollment);
 
-      // Trigger Email
+      // Trigger Emails
       try {
+        // 1. Notify Student
         await setDoc(doc(collection(db, 'mail')), {
           to: user!.email,
           message: {
             subject: `Successfully Enrolled: ${course?.title || 'Unknown Course'}`,
-            text: `Hi ${user!.displayName || 'Student'},\n\nGreat news! You are now enrolled in ${course?.title || 'Unknown Course'}. You can access your course materials from your dashboard.\n\nHappy Learning,\nEduAltTech`
+            text: `Hi ${user!.displayName || 'Student'},\n\nGreat news! You are now enrolled in ${course?.title || 'Unknown Course'}. You can access your course materials from your dashboard.\n\nHappy Learning,\nEdu-Alt-Tech`
           }
         });
-      } catch (e) { console.error("Email failed", e); }
+
+        // 2. Notify Mentor
+        if (selectedMentor) {
+           const mentorInfo = mentors.find(m => m.userId === selectedMentor);
+           if (mentorInfo?.email) {
+              await setDoc(doc(collection(db, 'mail')), {
+                to: mentorInfo.email,
+                message: {
+                   subject: `New Student Joined: ${course?.title || 'Course'}`,
+                   text: `Hi ${mentorInfo.name},\n\nA new student has joined your course "${course?.title}"!\n\nStudent Info:\n- Name: ${user!.displayName || 'N/A'}\n- Email: ${user!.email || 'N/A'}\n\nYou can now see them in your classroom community.\n\nBest,\nThe Edu-Alt-Tech Team`
+                }
+              });
+           }
+        }
+      } catch (e) {
+        console.error("Email notification failed", e);
+      }
 
       toast.success("You have successfully enrolled in the course!");
     } catch (err) {

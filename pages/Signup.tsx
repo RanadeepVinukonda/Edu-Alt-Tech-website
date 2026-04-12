@@ -71,8 +71,8 @@ const Signup: React.FC = () => {
         await setDoc(doc(collection(db, 'mail')), {
           to: email,
           message: {
-            subject: 'Welcome to Edu-Alt-Tech!',
-            text: `Hi ${name},\n\nThank you for joining EduAltTech! We're thrilled to have you as part of our learning community.\n\nBest,\nThe EduAltTech Team`
+            subject: 'Welcome to the Edu-Alt-Tech Community! 🚀',
+            text: `Hi ${name},\n\nWelcome to Edu-Alt-Tech! We're excited to have you on board. You've taken the first step towards a more disciplined and structured learning journey.\n\nWhat's next?\n1. Explore our high-discipline curricula.\n2. Apply for mentorship or find a mentor for your target subject.\n3. Track your progress daily in your personal dashboard.\n\nWe're here to support you every step of the way.\n\nKeep building,\nThe Edu-Alt-Tech Team`
           }
         });
       } catch (mailErr) {
