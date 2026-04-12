@@ -27,9 +27,6 @@ const CourseClassroom: React.FC = () => {
   // Active Expand States
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
 
-  // Active Expand States
-  const [expandedModules, setExpandedModules] = useState<string[]>([]);
-
   // Teacher Modals
   const [showModuleModal, setShowModuleModal] = useState(false);
   const [showLectureModal, setShowLectureModal] = useState<string | null>(null);
@@ -137,7 +134,6 @@ const CourseClassroom: React.FC = () => {
 
       await addDoc(collection(db, 'course_modules'), {
         courseId,
-        moduleId: selectedModuleId,
         teacherId: user.uid,
         title: mTitle,
         description: mDesc,

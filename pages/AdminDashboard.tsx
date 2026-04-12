@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { auth, db, storage } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import { Loader2, Plus, Users, CalendarClock, Trash2, Check, Video, FileText, Edit, Save, X, Upload, LayoutDashboard, Database, ClipboardList, Settings, Search, MoreVertical, ExternalLink } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Course, TeacherApplication, PatchNote, UserObject } from '../types';
+import { Course, TeacherApplication, PatchNote, UserObject, CourseCategory } from '../types';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,8 +28,8 @@ const AdminDashboard: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<(TeacherApplication & { userName?: string, userEmail?: string, courseTitle?: string }) | null>(null);
 
   // Create course states
-  const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0, thumbnail: '' });
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
+  const [thumbnailUrlFile, setThumbnailFile] = useState<File | null>(null);
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -38,7 +38,7 @@ const AdminDashboard: React.FC = () => {
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editCourseData, setEditCourseData] = useState<Course>({
     id: '', title: '', description: '', category: 'education', price: 0, 
-    thumbnail: '', createdAt: null, createdBy: ''
+    thumbnailUrl: '', createdAt: null, createdBy: ''
 
   });
   const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
@@ -164,7 +164,7 @@ const AdminDashboard: React.FC = () => {
         description: editCourseData.description,
         category: editCourseData.category,
         price: editCourseData.price,
-        thumbnail: editCourseData.thumbnail || ''
+        thumbnailUrl: editCourseData.thumbnailUrl || ''
       });
       setEditingCourseId(null);
       fetchData();
@@ -176,7 +176,7 @@ const AdminDashboard: React.FC = () => {
 
 
   const uploadImage = async (file: File, courseId: string) => {
-    const storageRef = ref(storage, `course_thumbnails/${courseId}/${file.name}`);
+    const storageRef = ref(storage, `course_thumbnailUrls/${courseId}/${file.name}`);
     const snapshot = await uploadBytes(storageRef, file);
     return await getDownloadURL(snapshot.ref);
   };
@@ -185,18 +185,18 @@ const AdminDashboard: React.FC = () => {
     e.preventDefault();
     setCreatingCourse(true);
     try {
-      let finalThumbnailUrl = newCourse.thumbnail;
-      if (thumbnailFile) {
-        const fileRef = ref(storage, `course_thumbnails/${Date.now()}_${thumbnailFile.name}`);
-        const snap = await uploadBytes(fileRef, thumbnailFile);
+      let finalThumbnailUrl = newCourse.thumbnailUrl;
+      if (thumbnailUrlFile) {
+        const fileRef = ref(storage, `course_thumbnailUrls/${Date.now()}_${thumbnailUrlFile.name}`);
+        const snap = await uploadBytes(fileRef, thumbnailUrlFile);
         finalThumbnailUrl = await getDownloadURL(snap.ref);
       }
 
       const cRef = doc(collection(db, 'courses'));
-      let thumbnail = newCourse.thumbnail;
+      let thumbnailUrl = newCourse.thumbnailUrl;
 
       if (selectedFile) {
-        thumbnail = await uploadImage(selectedFile, cRef.id);
+        thumbnailUrl = await uploadImage(selectedFile, cRef.id);
       }
 
       const courseObj: Course = {
@@ -205,12 +205,12 @@ const AdminDashboard: React.FC = () => {
         description: newCourse.description,
         category: newCourse.category as CourseCategory,
         price: Number(newCourse.price),
-        thumbnail: finalThumbnailUrl,
+        thumbnailUrl: finalThumbnailUrl,
         createdBy: 'admin',
         createdAt: serverTimestamp()
       };
       await setDoc(cRef, courseObj as any);
-      setNewCourse({ title: '', description: '', category: 'education', price: 0, thumbnail: '' });
+      setNewCourse({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
       setThumbnailFile(null);
       fetchData();
       toast.success("New course published!");
@@ -459,10 +459,10 @@ const AdminDashboard: React.FC = () => {
                           <div className="flex flex-col md:flex-row gap-4">
                             <label className="flex-1 flex items-center justify-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-emerald-500 transition-colors">
                               <Upload className="w-5 h-5 text-slate-400" />
-                              <span className="text-sm font-bold text-slate-500">{thumbnailFile ? thumbnailFile.name : 'Upload Thumbnail'}</span>
+                              <span className="text-sm font-bold text-slate-500">{thumbnailUrlFile ? thumbnailUrlFile.name : 'Upload Thumbnail'}</span>
                               <input type="file" className="hidden" accept="image/*" onChange={e => e.target.files && setThumbnailFile(e.target.files[0])} />
                             </label>
-                            <input type="url" value={newCourse.thumbnail} onChange={e=>setNewCourse({...newCourse, thumbnail: e.target.value})} placeholder="Or paste image URL..." className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-transparent focus:border-emerald-500 transition-all outline-none text-sm font-medium" />
+                            <input type="url" value={newCourse.thumbnailUrl} onChange={e=>setNewCourse({...newCourse, thumbnailUrl: e.target.value})} placeholder="Or paste image URL..." className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-transparent focus:border-emerald-500 transition-all outline-none text-sm font-medium" />
                           </div>
                         </div>
                         <div className="col-span-1 md:col-span-2">
@@ -512,8 +512,8 @@ const AdminDashboard: React.FC = () => {
                           ) : (
                             <div className="flex items-start gap-6">
                               <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0">
-                                {c.thumbnail ? (
-                                  <img src={c.thumbnail} className="w-full h-full object-cover" alt="" />
+                                {c.thumbnailUrl ? (
+                                  <img src={c.thumbnailUrl} className="w-full h-full object-cover" alt="" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <ClipboardList className="w-8 h-8 text-slate-400" />

@@ -124,8 +124,8 @@ const Home: React.FC = () => {
                       <div className="inline-block px-3 py-1 mb-4 text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                         {course.category}
                       </div>
-                      {course.thumbnail && (
-                        <img src={course.thumbnail} alt={course.title} className="w-full h-40 object-cover rounded-xl mb-4" />
+                      {course.thumbnailUrl && (
+                        <img src={course.thumbnailUrl} alt={course.title} className="w-full h-40 object-cover rounded-xl mb-4" />
                       )}
 
                       <h3 className="text-xl font-bold mb-4 group-hover:text-emerald-600 transition-colors">{course.title}</h3>
