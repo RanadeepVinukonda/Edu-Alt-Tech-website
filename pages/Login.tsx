@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, Loader2, Eye, EyeOff } from 'lucide-react';
 // Fix modular imports for Firebase Auth
-import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+
 import { auth } from '../lib/firebase';
 import { motion } from 'framer-motion';
 
@@ -11,7 +12,11 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
   const [error, setError] = useState('');
+
   const navigate = useNavigate();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +68,25 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Please enter your email to reset password');
+      return;
+    }
+    setResetLoading(true);
+    setError('');
+    setResetMessage('');
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetMessage('Reset link sent! Check your inbox.');
+    } catch (err: any) {
+      console.error(err);
+      setError('Failed to send reset email. Verify your email address.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-[#020617] flex flex-col items-center relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 w-[800px] h-[800px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -88,6 +112,13 @@ const Login: React.FC = () => {
           </div>
         )}
 
+        {resetMessage && (
+          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-800 text-sm font-medium">
+            {resetMessage}
+          </div>
+        )}
+
+
         <form className="space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
@@ -107,18 +138,34 @@ const Login: React.FC = () => {
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Password</label>
-                <a href="#" className="text-sm font-semibold text-emerald-600 hover:underline">Forgot password?</a>
+                <button 
+                  type="button" 
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading}
+                  className="text-sm font-semibold text-emerald-600 hover:underline disabled:opacity-50"
+                >
+                  {resetLoading ? 'Sending...' : 'Forgot password?'}
+                </button>
+
               </div>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-14 pr-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
+                  className="w-full pl-14 pr-12 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+
               </div>
             </div>
           </div>

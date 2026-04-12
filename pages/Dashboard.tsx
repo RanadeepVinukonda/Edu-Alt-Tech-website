@@ -3,7 +3,8 @@ import { auth, db, storage } from '../lib/firebase';
 import { Loader2, BookOpen, Users, Calendar, AlertCircle, X, Camera, MapPin, Building2, Tag, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserObject, CourseEnrollment, Course, TeacherApplication, Notification } from '../types';
 import { motion } from 'framer-motion';
@@ -27,7 +28,19 @@ const Dashboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
 
+  const handleCancelEnrollment = async (enrollmentId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this enrollment? This action is immediate.")) return;
+    try {
+      await deleteDoc(doc(db, 'enrollments', enrollmentId));
+      setStudentEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
+    } catch (err) {
+      console.error("Cancellation failed", err);
+      alert("Failed to cancel enrollment. Please try again.");
+    }
+  };
+
   useEffect(() => {
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (!u) {
@@ -232,7 +245,11 @@ const Dashboard: React.FC = () => {
                              <button onClick={() => navigate(`/classroom/${enr.courseId}`)} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 font-bold py-3 px-4 rounded-xl w-full transition-colors shadow-sm flex justify-center items-center gap-2">
                                Enter Classroom
                              </button>
+                             <button onClick={() => handleCancelEnrollment(enr.id)} className="mt-2 text-rose-500 hover:text-rose-600 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-1 mx-auto py-2 transition-colors">
+                               <X className="w-3 h-3" /> Cancel Enrollment
+                             </button>
                           </div>
+
                         )}
                      </div>
                    ))}

@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 // Fix modular imports for Firebase Auth
 import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signOut } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+
 import { auth, db } from '../lib/firebase';
 import { motion } from 'framer-motion';
 
@@ -13,8 +14,12 @@ const Signup: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const navigate = useNavigate();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -28,9 +33,21 @@ const Signup: React.FC = () => {
       setLoading(false);
       return;
     }
-
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Now that we are signed in, we can check for phone uniqueness
+      const q = query(collection(db, 'users'), where('phone', '==', phone));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // If phone taken, we unfortunately created the auth account already.
+        // But for dev simplicity, we can just throw or delete it.
+        // We'll throw an error and let the user know.
+        setError('Phone number is already registered. Please use another one.');
+        setLoading(false);
+        return;
+      }
 
       // Save additional user info to Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -39,6 +56,7 @@ const Signup: React.FC = () => {
         phone,
         createdAt: serverTimestamp()
       });
+
 
       // Update the user profile with the name
       await updateProfile(userCredential.user, {
@@ -128,16 +146,35 @@ const Signup: React.FC = () => {
           </div>
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Password</label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-              className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
-            />
+            <div className="relative">
+              <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
+                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Confirm Password</label>
-            <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••"
-              className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all"
-            />
+            <div className="relative">
+              <input type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••"
+                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-[#90EE90] focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 outline-none transition-all pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
+
           <div className="md:col-span-2 pt-4">
             <button type="submit" disabled={loading}
               className="w-full py-4 bg-slate-900 dark:bg-emerald-600 text-white font-bold rounded-2xl hover:bg-slate-800 dark:hover:bg-emerald-500 transition-all shadow-lg text-lg flex items-center justify-center gap-2"

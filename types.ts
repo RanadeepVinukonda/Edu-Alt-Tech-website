@@ -48,6 +48,7 @@ export interface Course {
   createdBy: string; // admin or system
 }
 
+
 // Enrollment / Application Types
 export type StudentStatus = 'waitlisted' | 'active' | 'completed';
 export type PaymentStatus = 'pending' | 'paid' | 'not-required';
@@ -69,7 +70,8 @@ export interface CourseEnrollment {
   completedModules?: string[]; // IDs of completed roadmap modules
 }
 
-export type TeacherAppStatus = 'pending' | 'scheduled' | 'approved' | 'rejected';
+export type TeacherAppStatus = 'pending' | 'approved_for_interview' | 'scheduled' | 'approved' | 'rejected';
+
 
 export interface TeacherApplication {
   id: string; // Document ID
@@ -123,6 +125,7 @@ export interface CourseModule {
 export interface Lecture {
   id: string;
   courseId: string;
+  moduleId: string; // Linked to a Module
   teacherId: string;
   title: string;
   description: string;
@@ -134,14 +137,17 @@ export interface Lecture {
   thumbnailUrl?: string;
 }
 
+
 export interface CourseResource {
   id: string;
   courseId: string;
+  moduleId?: string; // Optional: can be global or per module
   lectureId?: string; // Optional: If null, it's global for the course
   title: string;
   url: string;
   createdAt: any;
 }
+
 
 // System Updates
 export interface PatchNote {

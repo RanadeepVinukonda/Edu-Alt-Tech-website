@@ -31,10 +31,20 @@ const AdminDashboard: React.FC = () => {
   const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [creatingCourse, setCreatingCourse] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
 
   // Edit course states
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
-  const [editCourseData, setEditCourseData] = useState<Course>({} as Course);
+  const [editCourseData, setEditCourseData] = useState<Course>({
+    id: '', title: '', description: '', category: 'education', price: 0, 
+    thumbnail: '', createdAt: null, createdBy: ''
+
+  });
+  const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+
 
   const fetchData = async () => {
     setLoading(true);
@@ -164,6 +174,13 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+
+  const uploadImage = async (file: File, courseId: string) => {
+    const storageRef = ref(storage, `course_thumbnails/${courseId}/${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snapshot.ref);
+  };
+
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreatingCourse(true);
@@ -176,11 +193,17 @@ const AdminDashboard: React.FC = () => {
       }
 
       const cRef = doc(collection(db, 'courses'));
+      let thumbnailUrl = newCourse.thumbnail;
+
+      if (selectedFile) {
+        thumbnailUrl = await uploadImage(selectedFile, cRef.id);
+      }
+
       const courseObj: Course = {
         id: cRef.id,
         title: newCourse.title,
         description: newCourse.description,
-        category: newCourse.category as any,
+        category: newCourse.category as CourseCategory,
         price: Number(newCourse.price),
         thumbnailUrl: finalThumbnailUrl,
         createdBy: 'admin',
@@ -204,13 +227,30 @@ const AdminDashboard: React.FC = () => {
         status: verdict,
         updatedAt: serverTimestamp()
       });
-      if (emailStr) {
+
+      if (verdict === 'approved') {
+        // Create the specific course enrollment for this mentor
+        const appDoc = await getDoc(doc(db, 'teacher_applications', appId));
+        if (appDoc.exists()) {
+          const data = appDoc.data();
+          const enrollmentId = `${data.userId}_${data.courseId}`;
+          await setDoc(doc(db, 'enrollments', enrollmentId), {
+            userId: data.userId,
+            courseId: data.courseId,
+            role: 'teacher',
+            studentStatus: 'active', // So they aren't blocked by status checks
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+
+      if (emailStr && (verdict === 'approved' || verdict === 'rejected')) {
         await setDoc(doc(collection(db, 'mail')), {
           to: emailStr,
           message: {
             subject: `Teacher Application ${verdict === 'approved' ? 'Approved' : 'Rejected'}`,
             text: verdict === 'approved' 
-              ? 'Congratulations! You have been approved to teach. Welcome to the team.'
+              ? 'Congratulations! You have been approved to teach this course. Take a look at your course classroom to start building!'
               : 'Thank you for your interest, but we are unable to proceed with your application at this time.'
           }
         });

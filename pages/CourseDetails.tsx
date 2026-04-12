@@ -109,47 +109,157 @@ const CourseDetails: React.FC = () => {
     return () => unsubscribe();
   }, [courseId]);
 
-  const handleJoinAsStudent = async () => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const finalizeEnrollment = async (isPaid: boolean = false) => {
     setEnrollLoading(true);
     try {
       const enrollmentRef = doc(collection(db, 'enrollments'));
       const newEnrollment: CourseEnrollment = {
         id: enrollmentRef.id,
-        userId: user.uid,
+        userId: user!.uid,
         courseId: courseId!,
         role: 'student',
         studentStatus: 'active',
-        paymentStatus: 'not-required',
+        paymentStatus: isPaid ? 'paid' : 'not-required',
         mentorId: selectedMentor || undefined,
         createdAt: serverTimestamp()
       };
       await setDoc(enrollmentRef, newEnrollment as any);
       setEnrollment(newEnrollment);
 
-      // Trigger Email Extension Logic
+      // Trigger Email
       try {
         await setDoc(doc(collection(db, 'mail')), {
-          to: user.email,
+          to: user!.email,
           message: {
             subject: `Successfully Enrolled: ${course?.title || 'Unknown Course'}`,
-            text: `Hi ${user.displayName || 'Student'},\n\nGreat news! You are now enrolled in ${course?.title || 'Unknown Course'}. You can access your course materials from your dashboard.\n\nHappy Learning,\nEduAltTech`
+            text: `Hi ${user!.displayName || 'Student'},\n\nGreat news! You are now enrolled in ${course?.title || 'Unknown Course'}. You can access your course materials from your dashboard.\n\nHappy Learning,\nEduAltTech`
           }
         });
-      } catch (mailErr) {
-        console.error("Email trigger failed", mailErr);
-      }
+      } catch (e) { console.error("Email failed", e); }
 
       toast.success("You have successfully enrolled in the course!");
     } catch (err) {
       console.error(err);
+      alert("Failed to finalize enrollment. Please contact support.");
     } finally {
       setEnrollLoading(false);
     }
   };
+
+  const handleJoinAsStudent = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    if (!selectedMentor) {
+      alert("Please select a mentor first.");
+      return;
+    }
+
+    // Free Course
+    if (!course?.price || course.price === 0) {
+      await finalizeEnrollment(false);
+      return;
+    }
+
+    // Paid Course
+    setEnrollLoading(true);
+    try {
+      // 1. Create Order
+      const amountInPaise = (course.price || 0) * 100;
+      const resOrder = await fetch('/api/createOrder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountInPaise })
+      });
+      
+      if (!resOrder.ok) {
+        if (resOrder.status === 404) {
+          throw new Error("Payment API not found. If running locally, please use 'npx vercel dev' instead of 'npm run dev'.");
+        }
+        const errorData = await resOrder.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error (${resOrder.status})`);
+      }
+
+      const orderData = await resOrder.json();
+
+      // 2. Load Script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        alert("Payment gateway failed to load. Please check your internet connection.");
+        setEnrollLoading(false);
+        return;
+      }
+
+      // 3. Open Checkout
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_SUbr4cftio73uJ",
+        amount: amountInPaise,
+        currency: "INR",
+        name: "Edu Alt Tech",
+        description: `Enrollment for ${course.title}`,
+        image: "/edulogo.png",
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+            const resVerify = await fetch('/api/verifyPayment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            
+            if (!resVerify.ok) {
+              const verifyErrorData = await resVerify.json().catch(() => ({}));
+              throw new Error(verifyErrorData.error || "Payment verification failed on server");
+            }
+
+            const verifyData = await resVerify.json();
+
+            if (verifyData.success) {
+              await finalizeEnrollment(true);
+            } else {
+              throw new Error(verifyData.error || "Invalid Security Signature");
+            }
+          } catch (e: any) {
+            console.error("Verification error:", e);
+            alert(`Payment processed, but enrollment failed: ${e.message}`);
+          }
+        },
+        prefill: {
+          name: user.displayName || "",
+          email: user.email || "",
+        },
+        theme: { color: "#10b981" }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', (resp: any) => alert(`Payment Failed: ${resp.error.description}`));
+      rzp.open();
+
+    } catch (err: any) {
+      console.error("Payment flow error:", err);
+      alert(err.message || "An unexpected error occurred during payment.");
+    } finally {
+      setEnrollLoading(false);
+    }
+
+  };
+
 
   const handleApplyToTeach = () => {
     if (!user) {
@@ -281,8 +391,14 @@ const CourseDetails: React.FC = () => {
                         disabled={enrollLoading || !selectedMentor}
                         className="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-4 px-8 rounded-xl hover:bg-slate-800 dark:hover:bg-emerald-500 transition-all shadow-md disabled:opacity-50 mt-4 flex justify-center items-center gap-2"
                       >
-                        {enrollLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (selectedMentor ? 'Enroll under Mentor' : 'Select a Mentor to Enroll')}
+                        {enrollLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 
+                          (!course?.price || course.price === 0 ? 
+                            (selectedMentor ? 'Enroll Now (Free)' : 'Select a Mentor') : 
+                            (selectedMentor ? `Pay ₹${course.price} & Enroll` : 'Select a Mentor to Pay')
+                          )
+                        }
                       </button>
+
                     </div>
                   )}
                 </div>
