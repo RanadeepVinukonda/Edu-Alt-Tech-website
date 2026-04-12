@@ -43,9 +43,11 @@ export interface Course {
   description: string;
   category: CourseCategory;
   price?: number; // in INR, 0 = free
+  thumbnail?: string;
   createdAt: any;
   createdBy: string; // admin or system
 }
+
 
 // Enrollment / Application Types
 export type StudentStatus = 'waitlisted' | 'active' | 'completed';
@@ -68,7 +70,8 @@ export interface CourseEnrollment {
   completedModules?: string[]; // IDs of completed roadmap modules
 }
 
-export type TeacherAppStatus = 'pending' | 'scheduled' | 'approved' | 'rejected';
+export type TeacherAppStatus = 'pending' | 'approved_for_interview' | 'scheduled' | 'approved' | 'rejected';
+
 
 export interface TeacherApplication {
   id: string; // Document ID
@@ -99,9 +102,18 @@ export interface PathClass {
   createdAt?: any;
 }
 
+export interface Module {
+  id: string;
+  courseId: string;
+  title: string;
+  order: number;
+  createdAt: any;
+}
+
 export interface Lecture {
   id: string;
   courseId: string;
+  moduleId: string; // Linked to a Module
   teacherId: string;
   title: string;
   description: string;
@@ -112,14 +124,17 @@ export interface Lecture {
   recordedLink?: string;
 }
 
+
 export interface CourseResource {
   id: string;
   courseId: string;
+  moduleId?: string; // Optional: can be global or per module
   lectureId?: string; // Optional: If null, it's global for the course
   title: string;
   url: string;
   createdAt: any;
 }
+
 
 // System Updates
 export interface PatchNote {

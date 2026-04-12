@@ -93,10 +93,16 @@ const Courses: React.FC = () => {
                 <div className={`mb-4 w-fit px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${course.category === 'education' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
                   {course.category}
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">{course.title}</h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-6 flex-grow line-clamp-3 leading-relaxed">
-                  {course.description}
-                </p>
+                {course.thumbnail ? (
+                  <img src={course.thumbnail} alt={course.title} className="w-full h-48 object-cover rounded-2xl mb-4" />
+                ) : (
+                  <div className="w-full h-48 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-2xl mb-4 flex items-center justify-center">
+                    <Book className="w-12 h-12 text-slate-300 dark:text-slate-700" />
+                  </div>
+                )}
+
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 line-clamp-2">{course.title}</h3>
+
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                   <span className="font-bold text-slate-900 dark:text-white text-lg">
                     {course.price === 0 || !course.price ? 'Free' : `₹${course.price}`}
