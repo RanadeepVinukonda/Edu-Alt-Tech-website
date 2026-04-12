@@ -6,6 +6,8 @@ import { Course, TeacherApplication as TeacherAppType } from '../types';
 import { ArrowLeft, Loader2, Calendar } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 const TeacherApplication: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -84,11 +86,11 @@ const TeacherApplication: React.FC = () => {
         createdAt: serverTimestamp()
       });
 
-      alert("Application submitted successfully! The admin will review and schedule an appointment with you.");
+      toast.success("Application submitted successfully! The admin will review and schedule an appointment with you.");
       navigate(`/courses/${courseId}`);
     } catch (err) {
       console.error(err);
-      alert("Failed to submit application");
+      toast.error("Failed to submit application");
     } finally {
       setSubmitLoading(false);
     }
@@ -108,15 +110,21 @@ const TeacherApplication: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-3xl mx-auto">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-8">
+    <div className="min-h-screen pt-32 pb-32 px-6 bg-slate-50 dark:bg-[#020617] relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 w-[700px] h-[700px] -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-3xl mx-auto relative z-10"
+      >
+        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-8 font-medium">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
-        <div className="bg-white dark:bg-slate-900 p-8 md:p-12 rounded-[2rem] shadow-xl shadow-slate-200 dark:shadow-slate-950 border border-slate-200 dark:border-slate-800">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Apply to Teach</h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-8 pb-8 border-b border-slate-100 dark:border-slate-800">
+        <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-2xl p-8 md:p-12 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-slate-950 border border-slate-200/50 dark:border-slate-800/50">
+          <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Apply to Teach</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-10 pb-10 border-b border-slate-100 dark:border-slate-800 font-medium">
             You are applying to teach: <strong className="text-slate-900 dark:text-white">{course.title}</strong>
           </p>
 
@@ -201,7 +209,7 @@ const TeacherApplication: React.FC = () => {
             </button>
           </form>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

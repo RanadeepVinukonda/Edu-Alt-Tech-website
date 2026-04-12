@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
+import { toast } from 'react-hot-toast';
 
 const plans = [
   {
@@ -60,7 +61,7 @@ const PricingSection: React.FC = () => {
   const handlePayment = async (plan: any) => {
     // If the user isn't logged in, redirect them to the login page
     if (!user) {
-      alert("You need to log in or sign up before completing a transaction.");
+      toast.error("You need to log in or sign up before completing a transaction.");
       navigate('/login');
       return;
     }
@@ -92,7 +93,7 @@ const PricingSection: React.FC = () => {
       // 2. Load the checkout script
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
-        alert("Razorpay payment gateway failed to load. Please check your internet connection.");
+        toast.error("Razorpay payment gateway failed to load. Please check your internet connection.");
         setProcessingPlan(null);
         return;
       }
@@ -121,13 +122,13 @@ const PricingSection: React.FC = () => {
             const verifyData = await resVerify.json();
 
             if (resVerify.ok && verifyData.success) {
-              alert(`Payment Verified Successfully! Received securely and confirmed.`);
+              toast.success(`Payment Verified Successfully! Received securely and confirmed.`);
             } else {
               throw new Error(verifyData.error || "Invalid Security Signature");
             }
           } catch (verifyError) {
             console.error("Verification failed:", verifyError);
-            alert("Payment processed, but security verification failed! Please contact support.");
+            toast.error("Payment processed, but security verification failed! Please contact support.");
           }
         },
         prefill: {
@@ -143,73 +144,98 @@ const PricingSection: React.FC = () => {
       const paymentObject = new (window as any).Razorpay(options);
       
       paymentObject.on('payment.failed', function (response: any) {
-        alert(`Payment Failed. Reason: ${response.error.description}`);
+        toast.error(`Payment Failed. Reason: ${response.error.description}`);
       });
 
       paymentObject.open();
 
     } catch (error: any) {
       console.error("Payment initiation failed:", error);
-      alert(`Payment Failed: ${error.message}`);
+      toast.error(`Payment Failed: ${error.message}`);
     } finally {
       setProcessingPlan(null);
     }
   };
 
   return (
-    <section className="py-24 bg-white dark:bg-slate-950 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <p className="text-emerald-500 font-semibold tracking-wide uppercase text-sm mb-3">Pricing</p>
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6">Simple, scalable pricing</h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            Choose the plan that best fits your school's needs. No hidden fees.
+    <section className="py-24 md:py-40 bg-slate-50 dark:bg-[#020617] transition-colors duration-300 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMTQ4LCAxNjMsIDE4NCwgMC4xKSIvPjwvc3ZnPg==')] opacity-50 dark:opacity-20 pointer-events-none" />
+      <div className="max-w-[1400px] mx-auto px-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center max-w-2xl mx-auto mb-20"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest text-xs mb-8 shadow-sm">
+            Transparent Pricing
+          </div>
+          <h2 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white mb-6 tracking-tighter leading-[0.95]">
+            Simple, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">Scalable</span> Plans
+          </h2>
+          <p className="text-xl text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+            Choose the plan that best fits your institution. No hidden fees, no surprises.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, idx) => (
-            <motion.div 
+            <motion.div
               key={idx}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className={`relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border ${plan.popular ? 'border-emerald-500 shadow-xl shadow-emerald-500/10' : 'border-slate-200 dark:border-slate-800 shadow-sm'}`}
+              transition={{ duration: 0.6, delay: idx * 0.1 }}
+              className={`relative rounded-[2.5rem] p-10 flex flex-col overflow-hidden group ${
+                plan.popular
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl shadow-slate-900/20 dark:shadow-white/10'
+                  : 'bg-white dark:bg-slate-900/60 backdrop-blur border border-slate-200/50 dark:border-slate-800/50 shadow-xl'
+              }`}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-bold tracking-wide">
-                  MOST POPULAR
-                </div>
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-indigo-500/20 pointer-events-none" />
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-400 text-white px-6 py-2 rounded-full text-xs font-black tracking-widest uppercase shadow-lg">
+                    Most Popular
+                  </div>
+                </>
               )}
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{plan.name}</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 min-h-[40px]">{plan.desc}</p>
-              
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-slate-900 dark:text-white">{plan.price}</span>
-                {plan.price !== 'Custom' && <span className="text-slate-500 dark:text-slate-400 ml-2">/{plan.period}</span>}
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                {plan.features.map((feature, fIdx) => (
-                  <li key={fIdx} className="flex items-start gap-3">
-                    <Check className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-600 dark:text-slate-300 text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
 
-              <button 
-                onClick={() => handlePayment(plan)}
-                disabled={processingPlan === plan.name}
-                className={`block w-full py-4 rounded-xl font-bold text-center transition-all ${
-                  plan.popular 
-                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-1' 
-                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white hover:-translate-y-1'
-                } ${processingPlan === plan.name ? 'opacity-70 cursor-not-allowed transform-none' : ''}`}
-              >
-                {processingPlan === plan.name ? 'Connecting...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
-              </button>
+              <div className="relative z-10 flex flex-col h-full">
+                <h3 className={`text-2xl font-black mb-2 tracking-tight ${plan.popular ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>{plan.name}</h3>
+                <p className={`text-sm mb-8 font-medium min-h-[40px] ${plan.popular ? 'text-white/70 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'}`}>{plan.desc}</p>
+
+                <div className="mb-10">
+                  <span className={`text-5xl font-black tracking-tighter ${plan.popular ? 'text-white dark:text-slate-900' : 'text-slate-900 dark:text-white'}`}>{plan.price}</span>
+                  {plan.price !== 'Custom' && (
+                    <span className={`ml-2 text-sm font-medium ${plan.popular ? 'text-white/60 dark:text-slate-500' : 'text-slate-400'}`}>/{plan.period}</span>
+                  )}
+                </div>
+
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {plan.features.map((feature, fIdx) => (
+                    <li key={fIdx} className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${plan.popular ? 'bg-emerald-500/20 dark:bg-emerald-500/20' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                      </div>
+                      <span className={`text-sm font-medium ${plan.popular ? 'text-white/80 dark:text-slate-700' : 'text-slate-600 dark:text-slate-300'}`}>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handlePayment(plan)}
+                  disabled={processingPlan === plan.name}
+                  className={`w-full py-5 rounded-2xl font-black text-center transition-all hover:-translate-y-1 ${
+                    plan.popular
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/30'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white'
+                  } ${processingPlan === plan.name ? 'opacity-70 cursor-not-allowed translate-y-0' : ''}`}
+                >
+                  {processingPlan === plan.name ? 'Connecting...' : (plan.price === 'Free' || plan.price === 'Custom' ? 'Contact Us' : plan.button)}
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>

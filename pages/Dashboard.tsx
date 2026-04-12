@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, storage } from '../lib/firebase';
-import { Loader2, BookOpen, Users, Calendar, AlertCircle, X, Camera, MapPin, Building2, Tag } from 'lucide-react';
+import { Loader2, BookOpen, Users, Calendar, AlertCircle, X, Camera, MapPin, Building2, Tag, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { UserObject, CourseEnrollment, Course, TeacherApplication } from '../types';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { UserObject, CourseEnrollment, Course, TeacherApplication, Notification } from '../types';
+import { motion } from 'framer-motion';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -20,6 +19,7 @@ const Dashboard: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserObject | null>(null);
   const [studentEnrollments, setStudentEnrollments] = useState<(CourseEnrollment & { courseData?: Course })[]>([]);
   const [teacherApplications, setTeacherApplications] = useState<(TeacherApplication & { courseData?: Course })[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   
 
@@ -27,14 +27,6 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useGSAP(() => {
-    if (!loading && userProfile && containerRef.current) {
-      gsap.fromTo(containerRef.current, 
-        { opacity: 0, scale: 0.98 },
-        { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }
-      );
-    }
-  }, [loading, userProfile]);
 
   const handleCancelEnrollment = async (enrollmentId: string) => {
     if (!window.confirm("Are you sure you want to cancel this enrollment? This action is immediate.")) return;
@@ -74,12 +66,13 @@ const Dashboard: React.FC = () => {
         const sEnrollments: any[] = [];
         for (const docSnap of snapStudent.docs) {
           const data = docSnap.data();
-          let cData;
           try {
             const cDoc = await getDoc(doc(db, 'courses', data.courseId));
-            if (cDoc.exists()) cData = { id: cDoc.id, ...cDoc.data() };
+            if (cDoc.exists()) {
+              const cData = { id: cDoc.id, ...cDoc.data() };
+              sEnrollments.push({ id: docSnap.id, ...data, courseData: cData });
+            }
           } catch (e) {}
-          sEnrollments.push({ id: docSnap.id, ...data, courseData: cData });
         }
         setStudentEnrollments(sEnrollments);
       } catch (err) {
@@ -93,16 +86,27 @@ const Dashboard: React.FC = () => {
         const tApps: any[] = [];
         for (const docSnap of snapTeacher.docs) {
           const data = docSnap.data();
-           let cData;
            try {
              const cDoc = await getDoc(doc(db, 'courses', data.courseId));
-             if (cDoc.exists()) cData = { id: cDoc.id, ...cDoc.data() };
+             if (cDoc.exists()) {
+               const cData = { id: cDoc.id, ...cDoc.data() };
+               tApps.push({ id: docSnap.id, ...data, courseData: cData });
+             }
            } catch (e) {}
-           tApps.push({ id: docSnap.id, ...data, courseData: cData });
         }
         setTeacherApplications(tApps);
       } catch (err) {
         console.error("Error fetching teacher applications: ", err);
+      }
+
+      // Fetch notifications
+      try {
+        const qNotif = query(collection(db, 'notifications'), where('userId', '==', u.uid));
+        const snapNotif = await getDocs(qNotif);
+        const notifs = snapNotif.docs.map(d => ({ id: d.id, ...d.data() } as Notification));
+        setNotifications(notifs.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      } catch (err) {
+        // console.error("Error fetching notifications", err);
       }
 
       setLoading(false);
@@ -124,13 +128,19 @@ const Dashboard: React.FC = () => {
   if (!userProfile) return null;
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950 relative">
-      <div className="max-w-7xl mx-auto" ref={containerRef}>
+    <div className="min-h-screen pt-32 pb-32 px-6 bg-slate-50 dark:bg-[#020617] relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-[1400px] mx-auto relative z-10"
+        ref={containerRef}
+      >
         
         <div className="flex flex-col md:flex-row gap-8 items-start">
-          
           {/* Profile Sidebar */}
-          <div className="w-full md:w-1/3 lg:w-1/4 bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200 dark:shadow-slate-950 sticky top-32">
+          <div className="w-full md:w-1/3 lg:w-1/4 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] p-8 border border-slate-200/50 dark:border-slate-800/50 shadow-xl sticky top-32">
             <div className="flex flex-col items-center text-center">
                
                {userProfile.profilePic ? (
@@ -141,7 +151,7 @@ const Dashboard: React.FC = () => {
                  </div>
                )}
                
-               <h2 className="text-2xl font-bold text-slate-900 dark:text-white truncate w-full">{userProfile.name || 'User'}</h2>
+               <h2 className="text-2xl font-black text-slate-900 dark:text-white truncate w-full tracking-tight">{userProfile.name || 'User'}</h2>
                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 truncate w-full">{userProfile.email || user?.email}</p>
                
                <div className="w-full border-t border-slate-100 dark:border-slate-800 py-4 grid grid-cols-2 gap-4 text-center">
@@ -168,7 +178,7 @@ const Dashboard: React.FC = () => {
                  )}
                </div>
 
-               <Link to="/profile" className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl transition-colors text-sm block text-center">
+               <Link to="/profile" className="w-full py-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-2xl transition-colors text-sm block text-center">
                  Edit Profile
                </Link>
             </div>
@@ -177,11 +187,34 @@ const Dashboard: React.FC = () => {
           {/* Main Content Areas */}
           <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col gap-8">
              
+             {/* Notifications */}
+             {notifications.length > 0 && (
+               <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <div className="flex items-center gap-3 mb-6">
+                   <Bell className="w-6 h-6 text-amber-500" />
+                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Notifications</h2>
+                 </div>
+                 <div className="space-y-4">
+                   {notifications.map(notif => (
+                     <div key={notif.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-start">
+                       <div>
+                         <h3 className="font-bold text-slate-900 dark:text-white mb-1">{notif.title}</h3>
+                         <p className="text-slate-600 dark:text-slate-400 text-sm">{notif.message}</p>
+                       </div>
+                       {!notif.isRead && <span className="w-3 h-3 bg-red-500 rounded-full mt-1 flex-shrink-0"></span>}
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             )}
+
              {/* Learning Dashboard */}
-             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+             <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] p-8 border border-slate-200/50 dark:border-slate-800/50 shadow-xl">
                <div className="flex items-center gap-3 mb-6">
-                 <BookOpen className="w-6 h-6 text-blue-500" />
-                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Your Learning</h2>
+                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-500 rounded-xl flex items-center justify-center">
+                   <BookOpen className="w-5 h-5" />
+                 </div>
+                 <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Your Learning</h2>
                </div>
                
                {studentEnrollments.length === 0 ? (
@@ -225,10 +258,12 @@ const Dashboard: React.FC = () => {
              </div>
 
              {/* Teaching Dashboard */}
-             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+             <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] p-8 border border-slate-200/50 dark:border-slate-800/50 shadow-xl">
                <div className="flex items-center gap-3 mb-6">
-                 <Users className="w-6 h-6 text-purple-500" />
-                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Your Teaching</h2>
+                 <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-500 rounded-xl flex items-center justify-center">
+                   <Users className="w-5 h-5" />
+                 </div>
+                 <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Your Teaching</h2>
                </div>
                
                {teacherApplications.length === 0 ? (
@@ -262,12 +297,12 @@ const Dashboard: React.FC = () => {
                    ))}
                  </div>
                )}
-             </div>
+              </div>
 
           </div>
 
         </div>
-      </div>
+      </motion.div>
 
 
 

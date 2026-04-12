@@ -2,21 +2,36 @@
 import React from 'react';
 import { Mail, Phone, Instagram, MessageCircle, Send } from 'lucide-react';
 import { LINKS } from '../constants';
+import { motion } from 'framer-motion';
 
 const Contact: React.FC = () => {
   return (
-    <div className="pt-32 pb-24 px-6 bg-slate-50 dark:bg-slate-950 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">Get in Touch</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-xl max-w-2xl mx-auto">
+    <div className="pt-32 pb-32 px-6 bg-slate-50 dark:bg-[#020617] min-h-screen relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/5 to-indigo-500/5 dark:from-emerald-500/10 dark:to-indigo-500/10 rounded-full blur-[120px] pointer-events-none -translate-y-1/3 translate-x-1/3" />
+      <div className="max-w-[1400px] mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-20"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest text-xs mb-8 shadow-sm">
+            Get in Touch
+          </div>
+          <h1 className="text-6xl md:text-7xl font-black text-slate-900 dark:text-white mb-6 tracking-tighter leading-[0.95]">Let's Connect</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-xl font-medium max-w-xl mx-auto">
             Have questions about our peer-driven ecosystem? We're here to help.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-4 space-y-8">
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-8">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+            className="lg:col-span-4 space-y-8"
+          >
+            <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-xl space-y-8">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Mail className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
@@ -48,10 +63,15 @@ const Contact: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="lg:col-span-8">
-            <div className="bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200 dark:shadow-slate-950">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.7 }}
+            className="lg:col-span-8"
+          >
+            <div className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl p-10 md:p-12 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 shadow-2xl">
               <form className="space-y-6" onSubmit={e => e.preventDefault()}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -78,7 +98,7 @@ const Contact: React.FC = () => {
                 </button>
               </form>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
