@@ -19,6 +19,7 @@ const CourseDetails: React.FC = () => {
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [mentors, setMentors] = useState<any[]>([]);
   const [selectedMentor, setSelectedMentor] = useState<string | null>(null);
+  const [myAppStatus, setMyAppStatus] = useState<string | null>(null);
   
   const contentRef = React.useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,13 @@ const CourseDetails: React.FC = () => {
           // Fetch Approved Mentors for this course
           const appsQ = query(collection(db, 'teacher_applications'), where('courseId', '==', courseId), where('status', '==', 'approved'));
           const appsSnap = await getDocs(appsQ);
+
+          // Fetch current user's application status
+          const myAppQ = query(collection(db, 'teacher_applications'), where('courseId', '==', courseId), where('userId', '==', currentUser.uid));
+          const myAppSnap = await getDocs(myAppQ);
+          if (!myAppSnap.empty) {
+            setMyAppStatus(myAppSnap.docs[0].data().status);
+          }
 
           const loadedMentors = appsSnap.docs.map(doc => {
             const data = doc.data();
@@ -425,12 +433,26 @@ const CourseDetails: React.FC = () => {
                   <p className="text-slate-500 text-sm mb-4 max-w-sm">
                     Are you qualified to teach this subject? Apply to become a mentor and start teaching students securely.
                   </p>
-                  <button 
-                    onClick={handleApplyToTeach}
-                    className="w-full max-w-xs bg-white dark:bg-transparent text-purple-600 dark:text-purple-400 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-500 dark:hover:border-purple-500 font-bold py-3 px-8 rounded-xl transition-all shadow-sm"
-                  >
-                    Apply to Teach
-                  </button>
+                  {myAppStatus === 'pending' || myAppStatus === 'scheduled' ? (
+                     <button disabled className="w-full max-w-xs bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-3 px-8 rounded-xl cursor-not-allowed">
+                       Application Under Review
+                     </button>
+                  ) : myAppStatus === 'rejected' ? (
+                     <button disabled className="w-full max-w-xs bg-slate-200 dark:bg-slate-800 text-rose-500 dark:text-rose-400 font-bold py-3 px-8 rounded-xl cursor-not-allowed border border-rose-200 dark:border-rose-900/50">
+                       Application Rejected
+                     </button>
+                  ) : myAppStatus === 'approved' ? (
+                     <button disabled className="w-full max-w-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold py-3 px-8 rounded-xl cursor-not-allowed border border-emerald-200 dark:border-emerald-800">
+                       You are a Mentor
+                     </button>
+                  ) : (
+                     <button 
+                       onClick={handleApplyToTeach}
+                       className="w-full max-w-xs bg-white dark:bg-transparent text-purple-600 dark:text-purple-400 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-500 dark:hover:border-purple-500 font-bold py-3 px-8 rounded-xl transition-all shadow-sm"
+                     >
+                       Apply to Teach
+                     </button>
+                  )}
                 </div>
               </div>
             )}

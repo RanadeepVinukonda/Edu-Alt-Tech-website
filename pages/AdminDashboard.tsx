@@ -3,7 +3,7 @@ import { auth, db, storage } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
-import { Loader2, Plus, Users, CalendarClock, Trash2, Check, Video, FileText, Edit, Save, X, Upload, LayoutDashboard, Database, ClipboardList, Settings, Search, MoreVertical, ExternalLink } from 'lucide-react';
+import { Loader2, Plus, Users, CalendarClock, Trash2, Check, Video, FileText, Edit, Save, X, Upload, LayoutDashboard, Database, ClipboardList, Settings, Search, MoreVertical, ExternalLink, ArrowLeft, AlertCircle } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Course, TeacherApplication, PatchNote, UserObject, CourseCategory } from '../types';
 import { toast } from 'react-hot-toast';
@@ -39,10 +39,7 @@ const AdminDashboard: React.FC = () => {
   const [editCourseData, setEditCourseData] = useState<Course>({
     id: '', title: '', description: '', category: 'education', price: 0, 
     thumbnailUrl: '', createdAt: null, createdBy: ''
-
   });
-  const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
 
 
@@ -63,32 +60,21 @@ const AdminDashboard: React.FC = () => {
       const courses = cSnap.docs.map(d => ({ id: d.id, ...d.data() } as Course));
       setCoursesList(courses);
 
-      const rawApps = await Promise.all(aSnap.docs.map(async (d) => {
+      const rawApps = aSnap.docs.map((d) => {
         const data = d.data() as TeacherApplication;
         const cFind = courses.find(c => c.id === data.courseId);
-        
-        if (!cFind) {
-          await deleteDoc(doc(db, 'teacher_applications', d.id));
-          return null;
-        }
-
         const uFind = users.find(u => u.uid === data.userId);
-        
-        if (!uFind) {
-          await deleteDoc(doc(db, 'teacher_applications', d.id));
-          return null;
-        }
 
         return {
           ...data,
           id: d.id,
-          courseTitle: cFind.title,
-          userName: uFind.name || data.userName || 'Anonymous',
-          userEmail: uFind.email || data.userEmail || 'No Email'
+          courseTitle: cFind?.title || 'Unknown Course',
+          userName: uFind?.name || data.userName || 'Dangling Applicant',
+          userEmail: uFind?.email || data.userEmail || 'No Email'
         };
-      }));
+      });
 
-      setTeacherApps(rawApps.filter(app => app !== null) as any);
+      setTeacherApps(rawApps as any);
       setPatchNotes(pSnap.docs.map(d => ({ id: d.id, ...d.data() } as PatchNote)));
 
     } catch (e) {
@@ -238,7 +224,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const wipeAllData = async () => {
-    if (!window.confirm("CRITICAL WARNING: This will PERMANENTLY DELETE all data in the Firebase database (Users, Courses, Chats, etc.). This action cannot be undone. Proceed?")) return;
+    if (!window.confirm("CRITICAL WARNING: This will PERMANENTLY DELETE all data nodes in the database (Courses, Chats, Registries, etc.). NOTE: Actual Firebase Authentication user emails/passwords must be manually deleted from the Firebase Console to fully wipe user accounts. Proceed?")) return;
     
     setLoading(true);
     try {
@@ -385,76 +371,94 @@ const AdminDashboard: React.FC = () => {
               initial={{ x: -100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -100, opacity: 0 }}
-              className="fixed left-0 top-0 h-full w-72 md:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-[60] flex flex-col p-6 shadow-2xl md:shadow-none"
+              className="fixed left-0 top-0 h-full w-72 md:w-72 bg-white dark:bg-[#0f172a] border-r border-slate-200/50 dark:border-slate-800/50 z-[60] flex flex-col p-8 shadow-2xl md:shadow-none"
             >
               <div className="mb-12 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                    <LayoutDashboard className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                    <LayoutDashboard className="w-7 h-7 text-white" />
                   </div>
-                  <span className="font-black text-xl tracking-tighter">EDU-ALT <span className="text-emerald-500">ADMIN</span></span>
+                  <div className="flex flex-col">
+                    <span className="font-black text-xl tracking-tighter leading-none">CORE <span className="text-emerald-500">OPS</span></span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Admin Terminal</span>
+                  </div>
                 </div>
                 <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 space-y-3">
                 {[
-                  { id: 'courses', label: 'Curricula', icon: ClipboardList },
-                  { id: 'users', label: 'User Base', icon: Users },
-                  { id: 'appointments', label: 'Applications', icon: CalendarClock },
-                  { id: 'patchnotes', label: 'Patch Notes', icon: Database },
-                  { id: 'system', label: 'System', icon: Settings },
+                  { id: 'courses', label: 'Curricula', icon: ClipboardList, desc: 'Manage courses' },
+                  { id: 'users', label: 'User Base', icon: Users, desc: 'Control access' },
+                  { id: 'appointments', label: 'Applications', icon: CalendarClock, desc: 'Mentor review' },
+                  { id: 'patchnotes', label: 'Deployments', icon: Database, desc: 'System updates' },
+                  { id: 'system', label: 'Settings', icon: Settings, desc: 'Global config' },
                 ].map((item) => (
                   <button
                     key={item.id}
                     onClick={() => { setActiveTab(item.id as any); setIsSidebarOpen(false); }}
-                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-bold transition-all group ${
+                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold transition-all relative group overflow-hidden ${
                       activeTab === item.id 
-                      ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' 
-                      : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-slate-900 dark:bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20' 
+                      : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                     }`}
                   >
+                    {activeTab === item.id && (
+                      <motion.div layoutId="nav-bg" className="absolute inset-0 bg-emerald-500 dark:bg-emerald-600 -z-10" />
+                    )}
                     <item.icon className={`w-6 h-6 ${activeTab === item.id ? 'text-white' : 'group-hover:scale-110 transition-transform'}`} />
-                    <span>{item.label}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm">{item.label}</span>
+                      <span className={`text-[9px] font-medium uppercase tracking-widest ${activeTab === item.id ? 'text-white/60' : 'text-slate-400'}`}>{item.desc}</span>
+                    </div>
                   </button>
                 ))}
               </div>
 
-              <button 
-                onClick={() => navigate('/')}
-                className="mt-auto flex items-center gap-4 px-4 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-              >
-                <X className="w-6 h-6" />
-                <span>Exit Terminal</span>
-              </button>
+              <div className="mt-auto pt-8 border-t border-slate-100 dark:border-slate-800/50">
+                <button 
+                  onClick={() => navigate('/')}
+                  className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  <span>Exit Console</span>
+                </button>
+              </div>
             </motion.nav>
           </>
         )}
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="md:pl-64 pt-24 md:pt-8 pb-24 px-6 md:px-12">
-        <div className="max-w-6xl mx-auto">
+      <main className="md:pl-72 pt-32 md:pt-12 pb-24 px-6 md:px-16">
+        <div className="max-w-[1400px] mx-auto">
           {/* Header & Search */}
-          <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-            <div>
-              <h1 className="text-4xl font-black tracking-tight mb-2">
+          <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-16">
+            <div className="relative">
+              <span className="absolute -top-6 left-0 text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Operational Overview</span>
+              <h1 className="text-5xl font-black tracking-tight text-slate-900 dark:text-white">
                 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace('_', ' ')}
               </h1>
-              <p className="text-slate-500 font-medium">System administrative controls and oversight.</p>
+              <p className="text-slate-500 font-medium mt-2">Manage the underlying infrastructure of Edu-Alt.</p>
             </div>
             
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search database..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
-              />
+            <div className="relative group w-full lg:w-96">
+              <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl group-focus-within:bg-emerald-500/30 transition-all duration-500 opacity-0 group-focus-within:opacity-100"></div>
+              <div className="relative flex items-center">
+                <Search className="absolute left-5 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Global database query..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 dark:focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-bold dark:placeholder:text-slate-600"
+                />
+                <div className="absolute right-4 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-black text-slate-400 border border-slate-200 dark:border-slate-700 pointer-events-none">
+                  ⌘ K
+                </div>
+              </div>
             </div>
           </header>
 
@@ -595,57 +599,83 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {activeTab === 'users' && (
-                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-                  <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h2 className="text-xl font-bold">Authenticated Users</h2>
-                    <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-black text-slate-500 uppercase tracking-widest">
-                      {filteredUsers.length} TOTAL
-                    </span>
+                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xl">
+                  <div className="p-10 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                      <h2 className="text-2xl font-black tracking-tight">System Registry</h2>
+                      <p className="text-slate-500 font-medium text-sm">Active personnel and authenticated entities.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-3">
+                        {usersList.slice(0, 5).map((u, i) => (
+                          <div key={i} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">
+                            {(u.name || 'U').charAt(0)}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                        {filteredUsers.length} ENTITIES
+                      </span>
+                    </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                  <div className="overflow-x-auto overflow-y-auto max-h-[600px] custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-slate-50/50 dark:bg-slate-800/30">
-                          <th className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Identity</th>
-                          <th className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Permissions</th>
-                          <th className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400">Status</th>
-                          <th className="px-8 py-4 text-xs font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                        <tr className="bg-slate-50/50 dark:bg-slate-800/30 sticky top-0 z-10 backdrop-blur-md">
+                          <th className="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Biological ID</th>
+                          <th className="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Access Level</th>
+                          <th className="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Node Status</th>
+                          <th className="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-right">Ops</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                         {filteredUsers.map((usr) => (
-                          <tr key={usr.uid} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
-                            <td className="px-8 py-6">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center font-bold text-slate-500">
-                                  {(usr.name || 'U').charAt(0).toUpperCase()}
+                          <tr key={usr.uid} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group">
+                            <td className="px-10 py-6">
+                              <div className="flex items-center gap-5">
+                                <div className="relative">
+                                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center font-black text-slate-500 text-lg group-hover:scale-110 transition-transform">
+                                    {(usr.name || 'U').charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
                                 </div>
                                 <div>
-                                  <div className="font-bold flex items-center gap-2">
-                                    {usr.name || 'Anonymous'}
+                                  <div className="font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                    {usr.name || 'Unknown Entity'}
                                     {usr.email === ADMIN_EMAIL && (
-                                      <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase rounded-md">Root</span>
+                                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500 text-white text-[8px] font-black uppercase rounded-md shadow-lg shadow-emerald-500/20">
+                                        <Database className="w-2.5 h-2.5" /> ROOT
+                                      </div>
                                     )}
                                   </div>
-                                  <div className="text-sm text-slate-500 font-medium">{usr.email || 'No Email'}</div>
+                                  <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">{usr.email || '0X_NOT_FOUND'}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-8 py-6">
-                              <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">
-                                {usr.role || 'User'}
+                            <td className="px-10 py-6">
+                              <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                usr.role === 'admin' 
+                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                                : usr.role === 'teacher'
+                                ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                              }`}>
+                                {usr.role || 'Personnel'}
                               </span>
                             </td>
-                            <td className="px-8 py-6">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                <span className="text-sm font-bold text-slate-600 dark:text-slate-400">Active</span>
+                            <td className="px-10 py-6">
+                              <div className="flex items-center gap-2.5">
+                                <span className="flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Linked</span>
                               </div>
                             </td>
-                            <td className="px-8 py-6 text-right">
+                            <td className="px-10 py-6 text-right">
                               {usr.email !== ADMIN_EMAIL && (
-                                <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all">
-                                  <Trash2 className="w-5 h-5" />
+                                <button className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-2xl transition-all group/btn">
+                                  <Trash2 className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                 </button>
                               )}
                             </td>
@@ -658,54 +688,77 @@ const AdminDashboard: React.FC = () => {
               )}
 
               {activeTab === 'appointments' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {teacherApps.length === 0 ? (
-                    <div className="col-span-full py-20 text-center bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800">
-                      <CalendarClock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                      <p className="text-slate-500 font-bold">No pending mentor applications.</p>
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                        <CalendarClock className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <h2 className="text-2xl font-black tracking-tight">Active Recruitment</h2>
                     </div>
-                  ) : (
-                    teacherApps.map(app => (
-                      <motion.div 
-                        layout
-                        key={app.id} 
-                        className="group bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-                      >
-                        <div className="absolute top-0 right-0 p-4">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
-                            app.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                            app.status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                            'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
-                          }`}>
-                            {app.status}
-                          </span>
-                        </div>
-
-                        <div className="mb-6">
-                          <h4 className="font-black text-xl mb-1 line-clamp-1">{app.courseTitle}</h4>
-                          <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">{app.userName}</p>
-                        </div>
-
-                        <div className="space-y-4 mb-8">
-                          <div className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-400">
-                            <Users className="w-4 h-4" />
-                            <span>{app.userEmail}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-400">
-                            <ClipboardList className="w-4 h-4" />
-                            <span className="truncate">{app.skills || 'No skills listed'}</span>
-                          </div>
-                        </div>
-
-                        <button 
-                          onClick={() => setSelectedApp(app)}
-                          className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {teacherApps.length === 0 ? (
+                      <div className="col-span-full py-32 text-center bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                        <CalendarClock className="w-16 h-16 text-slate-200 dark:text-slate-800 mx-auto mb-6" />
+                        <h3 className="text-xl font-black text-slate-400">NO PENDING DOSSIERS</h3>
+                        <p className="text-slate-500 text-sm font-medium mt-2">The system is currently clear of applicants.</p>
+                      </div>
+                    ) : (
+                      teacherApps.map(app => (
+                        <motion.div 
+                          layout
+                          key={app.id} 
+                          className="group bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] transition-all duration-500 relative overflow-hidden"
                         >
-                          REVIEW DOSSIER
-                        </button>
-                      </motion.div>
-                    ))
-                  )}
+                          <div className="absolute top-0 right-0 p-6 flex items-center gap-2">
+                             <div className={`w-2 h-2 rounded-full animate-pulse ${
+                               app.status === 'pending' ? 'bg-amber-500' :
+                               app.status === 'approved' ? 'bg-emerald-500' : 'bg-blue-500'
+                             }`} />
+                             <span className={`text-[10px] font-black uppercase tracking-widest ${
+                               app.status === 'pending' ? 'text-amber-500' :
+                               app.status === 'approved' ? 'text-emerald-500' : 'text-blue-500'
+                             }`}>
+                               {app.status}
+                             </span>
+                          </div>
+
+                          <div className="mb-8">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">Applicant</span>
+                            <h4 className="font-black text-2xl text-slate-900 dark:text-white mb-1 line-clamp-1">{app.userName}</h4>
+                            <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">{app.userEmail}</p>
+                          </div>
+
+                          <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 mb-8">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Target Curriculum</span>
+                            <p className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                              <ClipboardList className="w-4 h-4 text-emerald-500" /> {app.courseTitle}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-4 mb-8">
+                            <div className="flex-1 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                              <span className="block text-[9px] font-black text-slate-400 uppercase mb-1">Experience</span>
+                              <span className="text-xl font-black text-slate-900 dark:text-white">{app.experience}y</span>
+                            </div>
+                            <div className="flex-1 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                              <span className="block text-[9px] font-black text-slate-400 uppercase mb-1">Skills</span>
+                              <span className="text-xl font-black text-emerald-500">{app.skills?.split(',').length || 0}</span>
+                            </div>
+                          </div>
+
+                          <button 
+                            onClick={() => setSelectedApp(app)}
+                            className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl group-hover:bg-emerald-500 group-hover:text-white"
+                          >
+                            REVIEW DOSSIER
+                          </button>
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -742,26 +795,59 @@ const AdminDashboard: React.FC = () => {
             </motion.div>
              {/* System Management Tab */}
              {activeTab === 'system' && (
-               <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl">
-                  <div className="flex items-center gap-4 mb-8">
-                     <span className="p-4 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-3xl">
-                        <Trash2 className="w-8 h-8" />
-                     </span>
-                     <div>
-                        <h3 className="text-2xl font-black tracking-tight">Danger Zone</h3>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Administrative Reset Tools</p>
-                     </div>
-                  </div>
-                  <div className="p-8 border-2 border-dashed border-red-500/20 rounded-[2.5rem] bg-red-500/5">
-                     <h4 className="text-lg font-black mb-2 text-red-600">Factory Reset Database</h4>
-                     <p className="text-slate-500 dark:text-slate-400 font-medium mb-6 text-sm">This operation will delete all documents in all collections (Courses, Users, Enrollments, Chats, etc.). Use this for a fresh start during staging or migration.</p>
-                     <button 
-                       onClick={wipeAllData}
-                       className="px-8 py-4 bg-red-600 text-white font-black rounded-2xl shadow-xl shadow-red-600/20 hover:bg-red-700 transition-all flex items-center gap-2"
-                     >
-                       <Database className="w-5 h-5" /> PERFORM SYSTEM WIPE
-                     </button>
-                  </div>
+               <div className="max-w-3xl mx-auto">
+                 <div className="bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-3xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-10 opacity-5">
+                      <Settings className="w-64 h-64" />
+                    </div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-5 mb-12">
+                         <span className="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center border border-rose-500/20 shadow-xl shadow-rose-500/10">
+                            <Database className="w-8 h-8" />
+                         </span>
+                         <div>
+                            <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Admin Subsystems</h3>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Critical Infrastructure Control</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-8">
+                        <section className="p-8 border-2 border-dashed border-rose-500/20 rounded-[2.5rem] bg-rose-500/5 group hover:bg-rose-500/10 transition-colors">
+                           <div className="flex items-start gap-4 mb-6">
+                             <AlertCircle className="w-8 h-8 text-rose-500 shrink-0 mt-1" />
+                             <div>
+                                <h4 className="text-xl font-black text-rose-600 mb-2 uppercase tracking-tighter">Hard System Purge</h4>
+                                <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed">This operation protocols a complete erasure of all Firestore nodes (Curricula, Users, Logs). Access keys and Auth profiles will persist, but all relational data will be nullified.</p>
+                             </div>
+                           </div>
+                           
+                           <div className="flex items-center gap-4">
+                             <button 
+                               onClick={wipeAllData}
+                               className="px-8 py-5 bg-rose-600 text-white font-black rounded-2xl shadow-2xl shadow-rose-600/30 hover:bg-rose-700 active:scale-95 transition-all flex items-center gap-3 uppercase tracking-widest text-xs"
+                             >
+                               <Trash2 className="w-5 h-5" /> Execute Data Wipe
+                             </button>
+                             <div className="text-[10px] font-black text-rose-500/60 uppercase tracking-[0.2em] animate-pulse">
+                               Authorization Required
+                             </div>
+                           </div>
+                        </section>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <button className="p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-800 text-left group">
+                            <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Backups</span>
+                            <span className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">Snapshot State</span>
+                          </button>
+                          <button className="p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-800 text-left group">
+                            <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Logs</span>
+                            <span className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">Audit Console</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                 </div>
                </div>
              )}
           </AnimatePresence>

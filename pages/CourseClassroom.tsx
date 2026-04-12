@@ -4,11 +4,12 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serv
 import { auth, db, storage } from '../lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Course, CourseEnrollment, CourseModule, ModuleLecture, CourseResource } from '../types';
-import { ArrowLeft, BookOpen, Video, FileText, Plus, Link as LinkIcon, Loader2, PlayCircle, CheckCircle2, Circle, ChevronRight, Clock, Award, Layout, Zap, X, Upload, ExternalLink } from 'lucide-react';
+import { ArrowLeft, BookOpen, Video, FileText, Plus, Link as LinkIcon, Loader2, PlayCircle, CheckCircle2, Circle, ChevronRight, Clock, Award, Layout, Zap, X, Upload, ExternalLink, MessageCircle } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import CourseChat from '../components/CourseChat';
 
 const CourseClassroom: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -277,14 +278,33 @@ const CourseClassroom: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Main Content: Immersive Roadmap */}
+          {/* Main Content Area */}
           <div className="lg:col-span-8 space-y-12">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
-                <Layout className="w-6 h-6 text-purple-500" />
-                Curriculum Roadmap
-              </h2>
+            
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-4 p-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 w-fit">
+              <button 
+                onClick={() => setActiveTab('roadmap')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'roadmap' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              >
+                <Layout className="w-4 h-4" /> Curriculum Roadmap
+              </button>
+              <button 
+                onClick={() => setActiveTab('chat')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'chat' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              >
+                <MessageCircle className="w-4 h-4" /> Intelligence Exchange
+              </button>
             </div>
+
+            {activeTab === 'roadmap' ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                    <BookOpen className="w-6 h-6 text-purple-500" />
+                    Curriculum Roadmap
+                  </h2>
+                </div>
 
             {modules.length === 0 ? (
               <div className="py-24 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
@@ -435,6 +455,17 @@ const CourseClassroom: React.FC = () => {
                   );
                 })}
               </div>
+              )}
+              </>
+            ) : (
+                <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+                    <CourseChat 
+                        courseId={courseId!} 
+                        currentUser={user} 
+                        mentorId={role === 'teacher' ? user!.uid : enrollment?.mentorId || ''} 
+                        role={role as 'student' | 'teacher'} 
+                    />
+                </div>
             )}
           </div>
 

@@ -19,7 +19,7 @@ const TeacherApplication: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [preferredDate, setPreferredDate] = useState('');
-  const [experience, setExperience] = useState('');
+  const [experience, setExperience] = useState<string>(''); // Years of experience
   const [skills, setSkills] = useState('');
   const [proposedPath, setProposedPath] = useState('');
   const [message, setMessage] = useState('');
@@ -74,17 +74,18 @@ const TeacherApplication: React.FC = () => {
         proposedPath: proposedPath.split('\n').map(s => s.trim()).filter(s => s.length > 0),
         appliedAt: serverTimestamp()
       };
-      await setDoc(appRef, application as any);
+      // Validate experience is numeric
+      const yearsExp = parseInt(experience);
+      if (isNaN(yearsExp) || yearsExp < 0) {
+        toast.error("Please enter a valid number of years for experience");
+        setSubmitLoading(false);
+        return;
+      }
 
-      // Also create an enrollment record for dashboard tracking
-      const enrollmentRef = doc(collection(db, 'enrollments'));
-      await setDoc(enrollmentRef, {
-        id: enrollmentRef.id,
-        userId: user.uid,
-        courseId: courseId,
-        role: 'teacher',
-        createdAt: serverTimestamp()
-      });
+      await setDoc(appRef, {
+        ...application,
+        experience: yearsExp, // Store as number
+      } as any);
 
       toast.success("Application submitted successfully! The admin will review and schedule an appointment with you.");
       navigate(`/courses/${courseId}`);
@@ -153,15 +154,16 @@ const TeacherApplication: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Relevant Experience</label>
-              <textarea 
-                rows={3}
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Years of Experience</label>
+              <input 
+                type="number"
+                min="0"
                 required
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
-                placeholder="Where have you taught before? How many years of experience do you have?"
-                className="w-full p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm dark:text-white resize-none"
-              ></textarea>
+                placeholder="e.g. 5"
+                className="w-full p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm dark:text-white"
+              />
             </div>
 
             <div>

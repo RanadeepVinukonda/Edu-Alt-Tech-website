@@ -3,7 +3,7 @@ import { auth, db, storage } from '../lib/firebase';
 import { Loader2, BookOpen, Users, Calendar, AlertCircle, X, Camera, MapPin, Building2, Tag, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs, getDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserObject, CourseEnrollment, Course, TeacherApplication, Notification } from '../types';
@@ -53,7 +53,9 @@ const Dashboard: React.FC = () => {
         if (docObj.exists()) {
           setUserProfile({ uid: docObj.id, ...docObj.data() } as UserObject);
         } else {
-          setUserProfile({ uid: u.uid, email: u.email || '', name: u.displayName || 'User', role: 'student' } as unknown as UserObject);
+          const defaultUser = { email: u.email || '', name: u.displayName || 'User', role: 'student' };
+          setUserProfile({ uid: u.uid, ...defaultUser } as unknown as UserObject);
+          setDoc(doc(db, 'users', u.uid), defaultUser, { merge: true }).catch(err => console.error("Self-healing failed:", err));
         }
       }, (err) => {
         console.warn("Profile snapshot closed or denied", err);
@@ -282,17 +284,21 @@ const Dashboard: React.FC = () => {
                             <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-2"><Calendar className="w-4 h-4"/> Appointment Scheduled</p>
                             <a href={app.meetingLink} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline text-sm font-medium">Join Meeting</a>
                          </div>
-                       ) : app.status === 'pending' ? (
-                         <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg w-fit mt-4 flex items-center gap-2">
-                           <AlertCircle className="w-4 h-4" /> Awaiting admin review
-                         </div>
-                       ) : app.status === 'approved' ? (
-                         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                             <button onClick={() => navigate(`/classroom/${app.courseId}`)} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl w-full transition-colors shadow-sm flex justify-center items-center gap-2">
-                               Enter Mentor Portal
-                             </button>
-                         </div>
-                       ) : null}
+                        ) : app.status === 'pending' ? (
+                          <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg w-fit mt-4 flex items-center gap-2 font-bold uppercase tracking-wider">
+                            <AlertCircle className="w-4 h-4" /> Under Review
+                          </div>
+                        ) : app.status === 'rejected' ? (
+                          <div className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 rounded-lg w-fit mt-4 flex items-center gap-2 font-bold uppercase tracking-wider">
+                            <X className="w-4 h-4" /> Application Declined
+                          </div>
+                        ) : app.status === 'approved' ? (
+                          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                              <button onClick={() => navigate(`/classroom/${app.courseId}`)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl w-full transition-colors shadow-sm flex justify-center items-center gap-2">
+                                Enter Mentor Portal
+                              </button>
+                          </div>
+                        ) : null}
                      </div>
                    ))}
                  </div>

@@ -2,12 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, storage } from '../lib/firebase';
 import { Loader2, Camera, X, Check, LogOut, ArrowLeft, Building2, MapPin, Tag, Edit3, Save } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { UserObject } from '../types';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 
@@ -24,6 +22,13 @@ const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Password Change State
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -94,6 +99,40 @@ const Profile: React.FC = () => {
       toast.error("Failed to update profile. Make sure Firebase Storage rules are set.");
     }
     setSaving(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !user.email) return;
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const credential = EmailAuthProvider.credential(user.email, oldPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      toast.success("Password updated successfully!");
+      setShowPasswordSection(false);
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/wrong-password') {
+        toast.error("Incorrect old password");
+      } else {
+        toast.error("Failed to update password. Try logging out and back in.");
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -226,6 +265,57 @@ const Profile: React.FC = () => {
                     <Check className="w-5 h-5"/> {successMsg}
                  </div>
               )}
+           </div>
+
+              {/* Password Management Section */}
+              <div className="pt-10 mt-10 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Security</h3>
+                    <p className="text-sm text-slate-500">Manage your account credentials.</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowPasswordSection(!showPasswordSection)} 
+                    className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    {showPasswordSection ? 'Cancel' : 'Change Password'}
+                  </button>
+                </div>
+
+                {showPasswordSection && (
+                  <form onSubmit={handleChangePassword} className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Old Password</label>
+                      <input 
+                        type="password" required value={oldPassword} onChange={e => setOldPassword(e.target.value)}
+                        className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 transition-all font-medium dark:text-white"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">New Password</label>
+                        <input 
+                          type="password" required value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                          className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 transition-all font-medium dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Confirm New Password</label>
+                        <input 
+                          type="password" required value={confirmNewPassword} onChange={e => setConfirmNewPassword(e.target.value)}
+                          className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-900/40 transition-all font-medium dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      type="submit" disabled={passwordLoading}
+                      className="w-full py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-bold rounded-2xl shadow-lg hover:scale-[1.01] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {passwordLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Update Password'}
+                    </button>
+                  </form>
+                )}
+              </div>
 
               <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-slate-100 dark:border-slate-800">
                  {isEditing ? (
@@ -245,7 +335,6 @@ const Profile: React.FC = () => {
                     </button>
                  )}
               </div>
-           </div>
         </div>
       </motion.div>
     </div>
