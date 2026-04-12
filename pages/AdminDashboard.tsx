@@ -28,7 +28,7 @@ const AdminDashboard: React.FC = () => {
   const [selectedApp, setSelectedApp] = useState<(TeacherApplication & { userName?: string, userEmail?: string, courseTitle?: string }) | null>(null);
 
   // Create course states
-  const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', category: 'education', price: 0, thumbnail: '' });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -164,7 +164,7 @@ const AdminDashboard: React.FC = () => {
         description: editCourseData.description,
         category: editCourseData.category,
         price: editCourseData.price,
-        thumbnailUrl: editCourseData.thumbnailUrl || ''
+        thumbnail: editCourseData.thumbnail || ''
       });
       setEditingCourseId(null);
       fetchData();
@@ -185,7 +185,7 @@ const AdminDashboard: React.FC = () => {
     e.preventDefault();
     setCreatingCourse(true);
     try {
-      let finalThumbnailUrl = newCourse.thumbnailUrl;
+      let finalThumbnailUrl = newCourse.thumbnail;
       if (thumbnailFile) {
         const fileRef = ref(storage, `course_thumbnails/${Date.now()}_${thumbnailFile.name}`);
         const snap = await uploadBytes(fileRef, thumbnailFile);
@@ -193,10 +193,10 @@ const AdminDashboard: React.FC = () => {
       }
 
       const cRef = doc(collection(db, 'courses'));
-      let thumbnailUrl = newCourse.thumbnail;
+      let thumbnail = newCourse.thumbnail;
 
       if (selectedFile) {
-        thumbnailUrl = await uploadImage(selectedFile, cRef.id);
+        thumbnail = await uploadImage(selectedFile, cRef.id);
       }
 
       const courseObj: Course = {
@@ -205,12 +205,12 @@ const AdminDashboard: React.FC = () => {
         description: newCourse.description,
         category: newCourse.category as CourseCategory,
         price: Number(newCourse.price),
-        thumbnailUrl: finalThumbnailUrl,
+        thumbnail: finalThumbnailUrl,
         createdBy: 'admin',
         createdAt: serverTimestamp()
       };
       await setDoc(cRef, courseObj as any);
-      setNewCourse({ title: '', description: '', category: 'education', price: 0, thumbnailUrl: '' });
+      setNewCourse({ title: '', description: '', category: 'education', price: 0, thumbnail: '' });
       setThumbnailFile(null);
       fetchData();
       toast.success("New course published!");
@@ -462,7 +462,7 @@ const AdminDashboard: React.FC = () => {
                               <span className="text-sm font-bold text-slate-500">{thumbnailFile ? thumbnailFile.name : 'Upload Thumbnail'}</span>
                               <input type="file" className="hidden" accept="image/*" onChange={e => e.target.files && setThumbnailFile(e.target.files[0])} />
                             </label>
-                            <input type="url" value={newCourse.thumbnailUrl} onChange={e=>setNewCourse({...newCourse, thumbnailUrl: e.target.value})} placeholder="Or paste image URL..." className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-transparent focus:border-emerald-500 transition-all outline-none text-sm font-medium" />
+                            <input type="url" value={newCourse.thumbnail} onChange={e=>setNewCourse({...newCourse, thumbnail: e.target.value})} placeholder="Or paste image URL..." className="flex-1 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-transparent focus:border-emerald-500 transition-all outline-none text-sm font-medium" />
                           </div>
                         </div>
                         <div className="col-span-1 md:col-span-2">
@@ -512,8 +512,8 @@ const AdminDashboard: React.FC = () => {
                           ) : (
                             <div className="flex items-start gap-6">
                               <div className="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0">
-                                {c.thumbnailUrl ? (
-                                  <img src={c.thumbnailUrl} className="w-full h-full object-cover" alt="" />
+                                {c.thumbnail ? (
+                                  <img src={c.thumbnail} className="w-full h-full object-cover" alt="" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <ClipboardList className="w-8 h-8 text-slate-400" />
