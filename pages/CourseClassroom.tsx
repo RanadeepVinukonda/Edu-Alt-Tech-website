@@ -22,8 +22,10 @@ const CourseClassroom: React.FC = () => {
   // Classroom Data
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [resources, setResources] = useState<CourseResource[]>([]);
-  const [studentCount, setStudentCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'roadmap' | 'chat'>('roadmap');
 
+  // Active Expand States
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
 
   // Active Expand States
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
@@ -57,19 +59,11 @@ const CourseClassroom: React.FC = () => {
 
       const rQ = query(collection(db, 'resources'), where('courseId', '==', courseIdStr));
       const rSnap = await getDocs(rQ);
-      setResources(rSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) } as CourseResource)));
-
-      // Fetch active student count
-      const sQ = query(collection(db, 'enrollments'), where('courseId', '==', courseIdStr), where('role', '==', 'student'));
-      const sSnap = await getDocs(sQ);
-      setStudentCount(sSnap.size);
-
-
+      setResources(rSnap.docs.map(d => ({ id: d.id, ...d.data() } as CourseResource)));
     } catch (e) {
       console.error("Failed to load classroom items", e);
     }
   };
-
 
   useEffect(() => {
     const init = async (currentUser: FirebaseUser | null) => {
@@ -108,7 +102,6 @@ const CourseClassroom: React.FC = () => {
            }
            setRole('student');
         }
-
 
         await fetchClassroomData(courseId);
 
@@ -193,13 +186,10 @@ const CourseClassroom: React.FC = () => {
     try {
       await addDoc(collection(db, 'resources'), {
         courseId,
-        teacherId: user.uid,
-        moduleId: selectedModuleId || null,
         title: rTitle,
         url: rUrl,
         createdAt: serverTimestamp()
       });
-
       setShowResourceModal(false);
       setRTitle(''); setRUrl('');
       fetchClassroomData(courseId);
@@ -622,9 +612,7 @@ const CourseClassroom: React.FC = () => {
         )}
       </AnimatePresence>
     </div>
-  </div>
   );
-
 };
 
 export default CourseClassroom;
